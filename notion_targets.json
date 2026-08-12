@@ -12,7 +12,9 @@
     "type": "page",
     "page_id": "3ba2d2f5-eb90-8163-b8e8-c703b087bff4",
     "url": "https://app.notion.com/p/3ba2d2f5eb908163b8e8c703b087bff4",
-    "parent": "스터디"
+    "parent": "스터디",
+    "표시이름": "🚀 AI DEV LAB",
+    "비고": "2026-08-13에 홈 대시보드 형태로 재구성. 헤더 + 안내 블록 아래에 강의 노트 / AI Library / 학습 진행 / Inbox DB 4개가 나열됨."
   },
 
   "강의 노트": {
@@ -24,22 +26,41 @@
     "properties": ["주제(title)", "이해도", "분류", "출처", "링크", "정리일"]
   },
 
-  "도구 사전": {
+  "AI Library": {
     "type": "database",
-    "database_id": "eed90b82-b60d-4e39-b9df-ed999aad0e32",
-    "data_source_id": "ba150fb9-b0f1-4204-8013-3b787bce421d",
-    "url": "https://app.notion.com/p/eed90b82b60d4e39b9dfed999aad0e32",
+    "database_id": "34b44e63-b7eb-4787-b030-1e61ed22d171",
+    "data_source_id": "625fa3df-0903-4ad9-83c0-033b151bf653",
+    "url": "https://app.notion.com/p/34b44e63b7eb4787b0301e61ed22d171",
     "parent": "바이브코딩",
-    "properties": ["도구명(title)", "숙련도", "분류", "비용", "링크", "한줄요약"]
+    "properties": ["이름(title)", "태그(multi_select: Claude/Codex/MCP/Git/에디터/커뮤니티)", "분류", "난이도", "BEST(checkbox)", "링크", "설명"],
+    "비고": "2026-08-13에 '도구 사전' + '링크 모음' + '레퍼런스 모음' 3개 DB를 통합해 생성. 9개 행 마이그레이션 완료(완전 중복 1건은 병합 시 제외). 화면에서 갤러리 뷰로 바꾸고 View 탭(전체/BEST/입문/Claude/Codex/MCP)을 직접 추가하면 목표 화면이 됨 — View는 API로 못 만듦."
   },
 
-  "링크 모음": {
+  "학습 진행": {
     "type": "database",
-    "database_id": "895f7a9a-44ce-4902-976a-cd97b6eb4344",
-    "data_source_id": "17ac14f8-a4ac-41e5-ba3c-547a5be1acc7",
-    "url": "https://app.notion.com/p/895f7a9a44ce4902976acd97b6eb4344",
+    "database_id": "d7b4bae7-f4c1-460b-b12a-00d946ad5391",
+    "data_source_id": "41c75822-15cc-47d2-adde-eb03b619e6f9",
+    "url": "https://app.notion.com/p/d7b4bae7f4c1460bb12a00d946ad5391",
     "parent": "바이브코딩",
-    "properties": ["사이트명(title)", "분류", "유용도", "태그", "링크", "메모"]
+    "properties": ["이름(title)", "상태(다음/진행중/실습/완료)", "메모"],
+    "비고": "2026-08-13 신규 생성. '지금 공부 중' 섹션 역할. 시드 3건: CLAUDE.md 이해하기(진행중), Git commit/push(실습), 첫 Skill 만들어보기(다음)."
+  },
+
+  "Inbox": {
+    "type": "database",
+    "database_id": "de779a45-0f84-4a15-bda6-87682f905004",
+    "data_source_id": "0bc753c2-b49a-4b7e-bc4b-093789a71d5e",
+    "url": "https://app.notion.com/p/de779a450f844a15bda687682f905004",
+    "parent": "바이브코딩",
+    "properties": ["이름(title)", "종류(배운 것/링크/아이디어)", "메모", "정리됨(checkbox)"],
+    "비고": "2026-08-13 신규 생성. 일단 아무거나 저장하는 곳. 상단 퀵버튼(➕배운 것/🔗링크/💡아이디어)은 노션에서 Database Button으로 직접 만들어야 함 — 버튼도 API로 못 만듦."
+  },
+
+  "_휴지통": {
+    "비고": "2026-08-13에 AI Library로 통합되며 휴지통行. 30일 안에는 노션 좌측 하단 휴지통에서 복구 가능.",
+    "도구 사전(구)": { "database_id": "eed90b82-b60d-4e39-b9df-ed999aad0e32" },
+    "링크 모음(구)": { "database_id": "895f7a9a-44ce-4902-976a-cd97b6eb4344" },
+    "레퍼런스 모음(구, 원래 드라이버 점검 DB)": { "database_id": "976b5519-ce9e-4f40-84c5-fc9996589d05" }
   },
 
   "_미연결": {
