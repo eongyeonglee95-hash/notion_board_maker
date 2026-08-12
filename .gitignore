@@ -1,0 +1,32 @@
+# 비밀 정보 — 절대 커밋 금지
+.env
+.env.local
+.env.*
+!.env.example
+*token*.txt
+*secret*
+
+# 작업 중 생성되는 임시 파일
+output/
+*.tmp
+tmp/
+scratch/
+
+# 파이썬
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 노드
+node_modules/
+npm-debug.log*
+
+# 맥
+.DS_Store
+.AppleDouble
+
+# 에디터
+.vscode/
+.idea/
+*.swp

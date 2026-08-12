@@ -1,0 +1,52 @@
+{
+  "_설명": "자주 쓰는 노션 페이지/DB 주소록. 행을 추가할 때는 data_source_id 를 사용합니다. 여기 있는 ID 만으로는 접근할 수 없고 토큰이 있어야 하므로 커밋해도 안전합니다.",
+
+  "스터디": {
+    "type": "page",
+    "page_id": "3ba2d2f5-eb90-80d6-8f51-f2bc1d927a43",
+    "url": "https://app.notion.com/p/3ba2d2f5eb9080d68f51f2bc1d927a43",
+    "설명": "최상위 폴더. 통합이 연결된 지점이라 하위는 모두 상속됩니다."
+  },
+
+  "바이브코딩": {
+    "type": "page",
+    "page_id": "3ba2d2f5-eb90-8163-b8e8-c703b087bff4",
+    "url": "https://app.notion.com/p/3ba2d2f5eb908163b8e8c703b087bff4",
+    "parent": "스터디"
+  },
+
+  "강의 노트": {
+    "type": "database",
+    "database_id": "77d3d354-d8fa-430c-9f05-df0f05fec8d1",
+    "data_source_id": "10eaab1d-9621-4f10-bdb6-81582bd4302a",
+    "url": "https://app.notion.com/p/77d3d354d8fa430c9f05df0f05fec8d1",
+    "parent": "바이브코딩",
+    "properties": ["주제(title)", "이해도", "분류", "출처", "링크", "정리일"]
+  },
+
+  "도구 사전": {
+    "type": "database",
+    "database_id": "eed90b82-b60d-4e39-b9df-ed999aad0e32",
+    "data_source_id": "ba150fb9-b0f1-4204-8013-3b787bce421d",
+    "url": "https://app.notion.com/p/eed90b82b60d4e39b9dfed999aad0e32",
+    "parent": "바이브코딩",
+    "properties": ["도구명(title)", "숙련도", "분류", "비용", "링크", "한줄요약"]
+  },
+
+  "링크 모음": {
+    "type": "database",
+    "database_id": "895f7a9a-44ce-4902-976a-cd97b6eb4344",
+    "data_source_id": "17ac14f8-a4ac-41e5-ba3c-547a5be1acc7",
+    "url": "https://app.notion.com/p/895f7a9a44ce4902976acd97b6eb4344",
+    "parent": "바이브코딩",
+    "properties": ["사이트명(title)", "분류", "유용도", "태그", "링크", "메모"]
+  },
+
+  "_미연결": {
+    "바이브코딩(기존)": {
+      "database_id": "3ac2d2f5-eb90-8022-adaa-c7126cebe77d",
+      "url": "https://app.notion.com/p/3ac2d2f5eb908022adaac7126cebe77d",
+      "상태": "워크스페이스 최상위에 있으며 통합 미연결. data_sources 가 빈 배열로 반환되어 내용을 읽을 수 없음. 노션에서 ··· > 연결 > 정리 에이전트 필요."
+    }
+  }
+}
