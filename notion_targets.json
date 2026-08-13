@@ -63,6 +63,40 @@
     "레퍼런스 모음(구, 원래 드라이버 점검 DB)": { "database_id": "976b5519-ce9e-4f40-84c5-fc9996589d05" }
   },
 
+  "육아": {
+    "type": "page",
+    "page_id": "3bb2d2f5-eb90-801a-9249-cf350c7f3186",
+    "url": "https://app.notion.com/p/3bb2d2f5eb90801a9249cf350c7f3186",
+    "설명": "유치원 일정 앱(kinder-schedule)의 부모 페이지. 최상위 워크스페이스에 통합이 직접 연결됨."
+  },
+
+  "유치원 일정": {
+    "type": "database",
+    "database_id": "3a74902f-6c0a-4080-9def-38c395daf4a4",
+    "data_source_id": "5ff22d22-a9c1-4592-bb7f-866764bb9b3d",
+    "url": "https://app.notion.com/p/3a74902f6c0a40809def38c395daf4a4",
+    "parent": "육아",
+    "properties": ["일정명(title)", "날짜", "종류(행사/휴원/단축수업/상담/기타)", "휴가필요(checkbox)", "담당(엄마/아빠/미정)", "메모", "출처"]
+  },
+
+  "제출·준비물": {
+    "type": "database",
+    "database_id": "40285e74-d834-4af5-b54c-74108cf4c45e",
+    "data_source_id": "0a773b9f-b288-461f-ac0c-9b105f130a08",
+    "url": "https://app.notion.com/p/40285e74d8344af5b54c74108cf4c45e",
+    "parent": "육아",
+    "properties": ["항목명(title)", "마감일", "종류(서류/준비물/납부/신청)", "완료(checkbox)", "담당(엄마/아빠/미정)", "메모", "출처"]
+  },
+
+  "급식 식단": {
+    "type": "database",
+    "database_id": "f7eb14bb-9adf-456f-aad3-0457adf1c24b",
+    "data_source_id": "bbd3e5d7-b31e-4d67-99a4-9c7d4e4bb74e",
+    "url": "https://app.notion.com/p/f7eb14bb9adf456faad30457adf1c24b",
+    "parent": "육아",
+    "properties": ["날짜(title)", "일자", "점심", "오전간식", "오후간식", "특이사항"]
+  },
+
   "_미연결": {
     "바이브코딩(기존)": {
       "database_id": "3ac2d2f5-eb90-8022-adaa-c7126cebe77d",

@@ -33,3 +33,10 @@ npm-debug.log*
 
 # oh-my-claudecode 로컬 세션/상태 캐시
 .omc/
+
+# 유치원 PDF — 아이 이름·사진이 들어있을 수 있어 절대 커밋 금지
+apps/kinder-schedule/inbox/
+
+# 아이 정보(유치원·반 이름 등)
+apps/kinder-schedule/config.json
+!apps/kinder-schedule/config.example.json
