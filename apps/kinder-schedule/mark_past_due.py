@@ -24,6 +24,21 @@ NOTION_PY = os.path.join(
 )
 TARGETS_JSON = os.path.join(REPO, "notion_targets.json")
 
+# 관공서 공휴일(대체공휴일 포함). 근로자의날(5/1)은 관공서 공휴일이 아니라서 뺀다.
+# 매년 발표되는 달력을 보고 다음 해가 추가돼야 한다.
+KR_HOLIDAYS = {
+    "2026-01-01", "2026-02-16", "2026-02-17", "2026-02-18", "2026-03-01",
+    "2026-03-02", "2026-05-05", "2026-05-24", "2026-05-25", "2026-06-03",
+    "2026-06-06", "2026-07-17", "2026-08-15", "2026-08-17", "2026-09-24",
+    "2026-09-25", "2026-09-26", "2026-10-03", "2026-10-05", "2026-10-09",
+    "2026-12-25",
+    "2027-01-01", "2027-02-06", "2027-02-07", "2027-02-08", "2027-02-09",
+    "2027-03-01", "2027-05-05", "2027-05-13", "2027-06-06", "2027-07-17",
+    "2027-07-19", "2027-08-15", "2027-08-16", "2027-09-14", "2027-09-15",
+    "2027-09-16", "2027-10-03", "2027-10-04", "2027-10-09", "2027-10-11",
+    "2027-12-25", "2027-12-27",
+}
+
 
 def load_notion():
     if not os.path.exists(NOTION_PY):
@@ -89,6 +104,12 @@ def strike_title(mod, page_id, prop_name, text):
     })
 
 
+def mark_holiday(mod, page_id):
+    mod.request("PATCH", f"/pages/{page_id}", {
+        "properties": {"공휴일": {"checkbox": True}},
+    })
+
+
 def main():
     mod = load_notion()
     targets = load_targets()
@@ -97,7 +118,21 @@ def main():
     updated = 0
 
     ds_schedule = targets["유치원 일정"]["data_source_id"]
-    for row in query_all(mod, ds_schedule):
+    schedule_rows = query_all(mod, ds_schedule)
+
+    for row in schedule_rows:
+        start = row.get("properties", {}).get("날짜", {}).get("date", {})
+        start = (start or {}).get("start")
+        if not start or row["properties"].get("공휴일", {}).get("checkbox"):
+            continue
+        if start[:10] in KR_HOLIDAYS:
+            mark_holiday(mod, row["id"])
+            name, _ = title_text_and_strike(row, "일정명")
+            print(f"공휴일 표시: {name} ({start[:10]})")
+            updated += 1
+            time.sleep(0.34)
+
+    for row in schedule_rows:
         d = end_date(row, "날짜")
         if not d or d >= today:
             continue

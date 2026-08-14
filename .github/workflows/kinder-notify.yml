@@ -12,6 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: config.json 복원
+        env:
+          KINDER_CONFIG_JSON: ${{ secrets.KINDER_CONFIG_JSON }}
+        run: echo "$KINDER_CONFIG_JSON" > apps/kinder-schedule/config.json
+
       - name: 지난 날짜 항목 취소선 표시
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
@@ -22,3 +27,11 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: python3 apps/kinder-schedule/notify.py
+
+      - name: 캘린더(ICS) 구독용 Gist 갱신
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          GH_TOKEN: ${{ secrets.GIST_TOKEN }}
+        run: |
+          python3 apps/kinder-schedule/build_ics.py > /tmp/kinder-schedule.ics
+          gh gist edit "${{ secrets.GIST_ID }}" --filename kinder-schedule.ics /tmp/kinder-schedule.ics

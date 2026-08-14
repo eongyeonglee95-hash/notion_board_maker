@@ -159,7 +159,8 @@ def collect_daily(mod, targets, today):
         if not d:
             continue
         dday = (d - today).days
-        is_vacation = prop_checkbox(row, "휴가")
+        공휴일 = prop_checkbox(row, "공휴일")
+        is_vacation = prop_checkbox(row, "휴가") and not 공휴일
 
         item = {
             "이름": prop_text(row, "일정명"),
@@ -167,6 +168,7 @@ def collect_daily(mod, targets, today):
             "종류": prop_select(row, "종류") or "기타",
             "담당": prop_select(row, "담당") or "미정",
             "dday": dday,
+            "공휴일": 공휴일,
         }
 
         if is_vacation and dday in D_DAYS:
@@ -209,11 +211,13 @@ def collect_range(mod, targets, start, end):
         d = prop_date_start(row, "날짜")
         if not d or not (start <= d <= end):
             continue
+        공휴일 = prop_checkbox(row, "공휴일")
         schedule_items.append({
             "이름": prop_text(row, "일정명"),
             "날짜": d,
             "종류": prop_select(row, "종류") or "기타",
-            "휴가": prop_checkbox(row, "휴가"),
+            "휴가": prop_checkbox(row, "휴가") and not 공휴일,
+            "공휴일": 공휴일,
             "담당": prop_select(row, "담당") or "미정",
         })
 
@@ -234,6 +238,30 @@ def collect_range(mod, targets, start, end):
     schedule_items.sort(key=lambda x: x["날짜"])
     submission_items.sort(key=lambda x: x["날짜"])
     return schedule_items, submission_items
+
+
+def find_next_item(mod, targets, after):
+    """after 이후 가장 빠른 유치원 일정 또는 제출·준비물 마감을 찾는다. 없으면 None."""
+    candidates = []
+
+    ds_schedule = targets["유치원 일정"]["data_source_id"]
+    for row in query_all(mod, ds_schedule):
+        d = prop_date_start(row, "날짜")
+        if d and d > after:
+            candidates.append((d, "다음 일정", prop_text(row, "일정명")))
+
+    ds_submission = targets["제출·준비물"]["data_source_id"]
+    for row in query_all(mod, ds_submission):
+        if prop_checkbox(row, "완료"):
+            continue
+        d = prop_date_start(row, "마감일")
+        if d and d > after:
+            candidates.append((d, "다음 마감", prop_text(row, "항목명")))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda x: x[0])
+    return candidates[0]
 
 
 def find_meal(mod, targets, date):
@@ -283,7 +311,12 @@ def bullet_range(item, show_vacation=False):
     담당_str = f"담당: {담당} ❗" if 담당 == "미정" else f"담당: {담당}"
     종류 = item.get("종류")
     종류_str = f"_{종류}_ " if 종류 else ""
-    warn = " ⚠️휴가" if show_vacation and item.get("휴가") else ""
+    if show_vacation and item.get("공휴일"):
+        warn = " 🎌공휴일"
+    elif show_vacation and item.get("휴가"):
+        warn = " ⚠️휴가"
+    else:
+        warn = ""
     return f"• *{d.month}/{d.day}({weekday_kr(d)})* {종류_str}{item['이름']}{warn} — {담당_str}"
 
 
@@ -337,11 +370,14 @@ def build_blocks_daily(vacation_items, tomorrow_items, submission_items, tomorro
     return blocks, fallback
 
 
-def build_blocks_period(title, schedule_items, submission_items, empty_text, dashboard_url):
+def build_blocks_period(title, schedule_items, submission_items, empty_text, dashboard_url, next_item=None):
     blocks = [header_block(title)]
 
     if not schedule_items and not submission_items:
-        blocks.append(section_mrkdwn(f"_{empty_text}_"))
+        blocks.append(section_mrkdwn(f"📭 *{empty_text}*"))
+        if next_item:
+            d, label, name = next_item
+            blocks.append(context_block(f"👉 {label}: {d.month}/{d.day}({weekday_kr(d)}) {name}"))
         blocks.append(notion_link_block(dashboard_url))
         return blocks, title
 
@@ -412,11 +448,13 @@ def run_daily(mod, targets, today, webhook, dry_run, dashboard_url):
     if today.day == 1:
         start, end = month_range(today.year, today.month)
         schedule_items, submission_items = collect_range(mod, targets, start, end)
+        next_item = None if (schedule_items or submission_items) else find_next_item(mod, targets, end)
         blocks, fallback = build_blocks_period(
             f"🏫 {today.month}월 유치원 알림 (월간 요약)",
             schedule_items, submission_items,
             "이번 달은 특별한 일정 없어요",
             dashboard_url,
+            next_item,
         )
         send_or_print(webhook, blocks, fallback, dry_run, f"{today} 월간")
 
@@ -425,12 +463,14 @@ def run_weekly(mod, targets, today, webhook, dry_run, dashboard_url):
     start = today + datetime.timedelta(days=1)
     end = today + datetime.timedelta(days=7)
     schedule_items, submission_items = collect_range(mod, targets, start, end)
+    next_item = None if (schedule_items or submission_items) else find_next_item(mod, targets, end)
     label = f"{start.month}/{start.day}~{end.month}/{end.day}"
     blocks, fallback = build_blocks_period(
         f"🏫 {label} 유치원 알림 (주간 요약)",
         schedule_items, submission_items,
         "다음 주는 특별한 일정 없어요",
         dashboard_url,
+        next_item,
     )
     send_or_print(webhook, blocks, fallback, dry_run, f"{today} 주간")
 

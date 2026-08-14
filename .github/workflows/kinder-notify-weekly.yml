@@ -12,6 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: config.json 복원
+        env:
+          KINDER_CONFIG_JSON: ${{ secrets.KINDER_CONFIG_JSON }}
+        run: echo "$KINDER_CONFIG_JSON" > apps/kinder-schedule/config.json
+
       - name: 주간 요약 발송
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
