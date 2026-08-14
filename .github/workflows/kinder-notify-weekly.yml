@@ -1,0 +1,19 @@
+name: 유치원 주간 슬랙 알림
+
+on:
+  schedule:
+    # 매주 일요일 저녁 8시 KST = 일요일 11:00 UTC
+    - cron: '0 11 * * 0'
+  workflow_dispatch: {}  # 수동 실행용 (테스트할 때 사용)
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 주간 요약 발송
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python3 apps/kinder-schedule/notify.py --weekly
