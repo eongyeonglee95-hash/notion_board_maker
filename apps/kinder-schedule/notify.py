@@ -39,6 +39,7 @@ NOTION_PY = os.path.join(
     REPO, ".claude", "skills", "notion-organizer", "scripts", "notion.py"
 )
 TARGETS_JSON = os.path.join(REPO, "notion_targets.json")
+CONFIG_JSON = os.path.join(HERE, "config.json")
 
 D_DAYS = (7, 3, 1)  # 휴가필요·제출물 알림은 이 날짜에만 발송한다
 
@@ -54,6 +55,16 @@ def load_notion():
 
 def load_targets():
     with open(TARGETS_JSON, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_config():
+    if not os.path.exists(CONFIG_JSON):
+        sys.exit(
+            f"config.json 을 찾을 수 없습니다: {CONFIG_JSON}\n"
+            "config.example.json 을 config.json 으로 복사해서 값을 채워주세요."
+        )
+    with open(CONFIG_JSON, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -282,8 +293,12 @@ def _strip_trailing_divider(blocks):
     return blocks
 
 
-def build_blocks_daily(vacation_items, tomorrow_items, submission_items, tomorrow_meal, today):
-    if not vacation_items and not tomorrow_items and not submission_items:
+def notion_link_block(dashboard_url):
+    return context_block(f"🔗 <{dashboard_url}|노션에서 자세히 보기>")
+
+
+def build_blocks_daily(vacation_items, tomorrow_items, submission_items, tomorrow_meal, today, dashboard_url):
+    if not vacation_items and not tomorrow_items and not submission_items and not tomorrow_meal:
         return None, None
 
     blocks = [header_block(f"🏫 유치원 알림 · {today.month}/{today.day}({weekday_kr(today)})")]
@@ -317,15 +332,17 @@ def build_blocks_daily(vacation_items, tomorrow_items, submission_items, tomorro
         blocks.append(context_block(meal_text))
 
     _strip_trailing_divider(blocks)
+    blocks.append(notion_link_block(dashboard_url))
     fallback = f"유치원 알림 · {today.month}/{today.day}({weekday_kr(today)})"
     return blocks, fallback
 
 
-def build_blocks_period(title, schedule_items, submission_items, empty_text):
+def build_blocks_period(title, schedule_items, submission_items, empty_text, dashboard_url):
     blocks = [header_block(title)]
 
     if not schedule_items and not submission_items:
         blocks.append(section_mrkdwn(f"_{empty_text}_"))
+        blocks.append(notion_link_block(dashboard_url))
         return blocks, title
 
     if schedule_items:
@@ -338,6 +355,7 @@ def build_blocks_period(title, schedule_items, submission_items, empty_text):
         blocks.append(divider_block())
 
     _strip_trailing_divider(blocks)
+    blocks.append(notion_link_block(dashboard_url))
     return blocks, title
 
 
@@ -382,12 +400,12 @@ def send_or_print(webhook, blocks, fallback, dry_run, label):
     print(f"\n슬랙 발송 완료 (status {status})\n")
 
 
-def run_daily(mod, targets, today, webhook, dry_run):
+def run_daily(mod, targets, today, webhook, dry_run, dashboard_url):
     vacation_items, tomorrow_items, submission_items, tomorrow_meal = collect_daily(
         mod, targets, today
     )
     blocks, fallback = build_blocks_daily(
-        vacation_items, tomorrow_items, submission_items, tomorrow_meal, today
+        vacation_items, tomorrow_items, submission_items, tomorrow_meal, today, dashboard_url
     )
     send_or_print(webhook, blocks, fallback, dry_run, f"{today} 데일리")
 
@@ -398,11 +416,12 @@ def run_daily(mod, targets, today, webhook, dry_run):
             f"🏫 {today.month}월 유치원 알림 (월간 요약)",
             schedule_items, submission_items,
             "이번 달은 특별한 일정 없어요",
+            dashboard_url,
         )
         send_or_print(webhook, blocks, fallback, dry_run, f"{today} 월간")
 
 
-def run_weekly(mod, targets, today, webhook, dry_run):
+def run_weekly(mod, targets, today, webhook, dry_run, dashboard_url):
     start = today + datetime.timedelta(days=1)
     end = today + datetime.timedelta(days=7)
     schedule_items, submission_items = collect_range(mod, targets, start, end)
@@ -411,6 +430,7 @@ def run_weekly(mod, targets, today, webhook, dry_run):
         f"🏫 {label} 유치원 알림 (주간 요약)",
         schedule_items, submission_items,
         "다음 주는 특별한 일정 없어요",
+        dashboard_url,
     )
     send_or_print(webhook, blocks, fallback, dry_run, f"{today} 주간")
 
@@ -430,11 +450,12 @@ def main():
     mod = load_notion()
     targets = load_targets()
     webhook = load_slack_webhook()
+    dashboard_url = load_config()["노션_대시보드_URL"]
 
     if args.weekly:
-        run_weekly(mod, targets, today, webhook, args.dry_run)
+        run_weekly(mod, targets, today, webhook, args.dry_run, dashboard_url)
     else:
-        run_daily(mod, targets, today, webhook, args.dry_run)
+        run_daily(mod, targets, today, webhook, args.dry_run, dashboard_url)
 
 
 if __name__ == "__main__":
