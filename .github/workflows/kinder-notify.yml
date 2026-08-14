@@ -12,6 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: 지난 날짜 항목 취소선 표시
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: python3 apps/kinder-schedule/mark_past_due.py
+
       - name: 알림 확인 및 발송
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}

@@ -40,3 +40,7 @@ apps/kinder-schedule/inbox/
 # 아이 정보(유치원·반 이름 등)
 apps/kinder-schedule/config.json
 !apps/kinder-schedule/config.example.json
+
+# 개인 세션 훅 설정 · 마지막 확인 날짜 캐시
+.claude/settings.local.json
+.claude/.last-kinder-check
