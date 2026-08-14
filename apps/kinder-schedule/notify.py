@@ -3,6 +3,8 @@
 노션의 유치원 일정 · 제출·준비물 · 급식 식단을 확인해서 슬랙으로 알린다.
 
 의존성 없음(표준 라이브러리만 사용). notion.py 를 옆에서 불러 쓴다.
+Slack Block Kit(https://api.slack.com/block-kit) 으로 메시지를 만든다 —
+헤더·구분선·불릿이 있어야 슬랙 앱에서 한눈에 들어온다.
 
 사용법:
   python3 apps/kinder-schedule/notify.py --dry-run              # 발송 없이 메시지만 출력
@@ -235,82 +237,112 @@ def find_meal(mod, targets, date):
     return None
 
 
-def format_daily_item(item):
+# ---------------------------------------------------------------------------
+# Slack Block Kit 렌더링
+# ---------------------------------------------------------------------------
+
+def header_block(text):
+    return {"type": "header", "text": {"type": "plain_text", "text": text, "emoji": True}}
+
+
+def section_mrkdwn(text):
+    return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
+
+
+def divider_block():
+    return {"type": "divider"}
+
+
+def context_block(text):
+    return {"type": "context", "elements": [{"type": "mrkdwn", "text": text}]}
+
+
+def bullet_daily(item):
+    """D-day 있는 항목(휴가필요·제출물) 한 줄."""
     d = item["날짜"]
-    date_str = f"{d.month}/{d.day}({weekday_kr(d)})"
     담당 = item["담당"]
     담당_str = f"담당: {담당} ❗" if 담당 == "미정" else f"담당: {담당}"
-    return f"  {date_str} {item['이름']}  — D-{item['dday']} · {담당_str}"
+    return f"• *{d.month}/{d.day}({weekday_kr(d)})* {item['이름']}  `D-{item['dday']}` · {담당_str}"
 
 
-def format_range_item(item, show_vacation=False):
+def bullet_range(item, show_vacation=False):
+    """기간(월간·주간·내일) 항목 한 줄. 종류 표시, 필요하면 휴가 배지."""
     d = item["날짜"]
-    date_str = f"{d.month}/{d.day}({weekday_kr(d)})"
     담당 = item.get("담당", "미정")
     담당_str = f"담당: {담당} ❗" if 담당 == "미정" else f"담당: {담당}"
-    tag = f"[{item['종류']}]" if "종류" in item else ""
-    warn = " ⚠️휴가" if item.get("휴가") and show_vacation else ""
-    return f"  {date_str} {tag}{item['이름']}{warn}  — {담당_str}"
+    종류 = item.get("종류")
+    종류_str = f"_{종류}_ " if 종류 else ""
+    warn = " ⚠️휴가" if show_vacation and item.get("휴가") else ""
+    return f"• *{d.month}/{d.day}({weekday_kr(d)})* {종류_str}{item['이름']}{warn} — {담당_str}"
 
 
-def build_daily_message(vacation_items, tomorrow_items, submission_items, tomorrow_meal):
+def _strip_trailing_divider(blocks):
+    if blocks and blocks[-1]["type"] == "divider":
+        blocks.pop()
+    return blocks
+
+
+def build_blocks_daily(vacation_items, tomorrow_items, submission_items, tomorrow_meal, today):
     if not vacation_items and not tomorrow_items and not submission_items:
-        return None
+        return None, None
 
-    lines = ["🏫 유치원 알림", ""]
+    blocks = [header_block(f"🏫 유치원 알림 · {today.month}/{today.day}({weekday_kr(today)})")]
+
     if vacation_items:
-        lines.append("⚠️ 휴가 필요")
-        lines.extend(format_daily_item(i) for i in vacation_items)
-        lines.append("")
+        lines = ["*⚠️ 휴가 필요*"] + [bullet_daily(i) for i in vacation_items]
+        blocks.append(section_mrkdwn("\n".join(lines)))
+        blocks.append(divider_block())
     if tomorrow_items:
-        lines.append("📌 내일 있는 일정")
-        lines.extend(format_range_item(i) for i in tomorrow_items)
-        lines.append("")
+        lines = ["*📌 내일 있는 일정*"] + [bullet_range(i) for i in tomorrow_items]
+        blocks.append(section_mrkdwn("\n".join(lines)))
+        blocks.append(divider_block())
     if submission_items:
-        lines.append("📄 제출 기한")
-        lines.extend(format_daily_item(i) for i in submission_items)
-        lines.append("")
+        lines = ["*📄 제출 기한*"] + [bullet_daily(i) for i in submission_items]
+        blocks.append(section_mrkdwn("\n".join(lines)))
+        blocks.append(divider_block())
 
     has_undecided = any(
         i["담당"] == "미정" for i in vacation_items + submission_items
     )
     if has_undecided:
-        lines.append("미정인 항목은 오늘 안에 정해주세요")
-        lines.append("")
+        blocks.append(context_block("⚠️ 미정인 항목은 오늘 안에 정해주세요"))
 
     if tomorrow_meal:
         lunch, snack = tomorrow_meal
-        meal_line = "🍱 내일 식단"
+        meal_text = "🍱 내일 식단"
         if lunch:
-            meal_line += f": {lunch}"
+            meal_text += f": {lunch}"
         if snack:
-            meal_line += f" · 간식 {snack}"
-        lines.append(meal_line)
+            meal_text += f" · 간식 {snack}"
+        blocks.append(context_block(meal_text))
 
-    return "\n".join(lines).rstrip()
+    _strip_trailing_divider(blocks)
+    fallback = f"유치원 알림 · {today.month}/{today.day}({weekday_kr(today)})"
+    return blocks, fallback
 
 
-def build_period_message(title, schedule_items, submission_items, empty_text):
-    lines = [title, ""]
+def build_blocks_period(title, schedule_items, submission_items, empty_text):
+    blocks = [header_block(title)]
 
     if not schedule_items and not submission_items:
-        lines.append(empty_text)
-        return "\n".join(lines).rstrip()
+        blocks.append(section_mrkdwn(f"_{empty_text}_"))
+        return blocks, title
 
     if schedule_items:
-        lines.append("📅 일정")
-        lines.extend(format_range_item(i, show_vacation=True) for i in schedule_items)
-        lines.append("")
+        lines = ["*📅 일정*"] + [bullet_range(i, show_vacation=True) for i in schedule_items]
+        blocks.append(section_mrkdwn("\n".join(lines)))
+        blocks.append(divider_block())
     if submission_items:
-        lines.append("📄 마감인 제출·준비물")
-        lines.extend(format_range_item(i) for i in submission_items)
-        lines.append("")
+        lines = ["*📄 마감인 제출·준비물*"] + [bullet_range(i) for i in submission_items]
+        blocks.append(section_mrkdwn("\n".join(lines)))
+        blocks.append(divider_block())
 
-    return "\n".join(lines).rstrip()
+    _strip_trailing_divider(blocks)
+    return blocks, title
 
 
-def send_to_slack(webhook_url, text):
-    body = json.dumps({"text": text}).encode("utf-8")
+def send_to_slack(webhook_url, blocks, fallback):
+    body = json.dumps({"text": fallback, "blocks": blocks}).encode("utf-8")
     req = urllib.request.Request(
         webhook_url, data=body, method="POST",
         headers={"Content-Type": "application/json"},
@@ -319,12 +351,25 @@ def send_to_slack(webhook_url, text):
         return resp.status
 
 
-def send_or_print(webhook, message, dry_run, label):
-    if message is None:
+def print_blocks(blocks):
+    for b in blocks:
+        t = b["type"]
+        if t == "header":
+            print(f"# {b['text']['text']}")
+        elif t == "section":
+            print(b["text"]["text"])
+        elif t == "divider":
+            print("---")
+        elif t == "context":
+            print("  " + " / ".join(e["text"] for e in b["elements"]))
+
+
+def send_or_print(webhook, blocks, fallback, dry_run, label):
+    if blocks is None:
         print(f"[{label}] 알릴 것이 없습니다.")
         return
-    print(f"[{label}]")
-    print(message)
+    print(f"[{label}] {fallback}")
+    print_blocks(blocks)
     if dry_run:
         print("\n(연습) 위 메시지는 발송되지 않았습니다.\n")
         return
@@ -333,7 +378,7 @@ def send_or_print(webhook, message, dry_run, label):
             "\nSLACK_WEBHOOK_URL 이 없습니다. .env 에 추가해주세요:\n"
             "  SLACK_WEBHOOK_URL=https://hooks.slack.com/services/..."
         )
-    status = send_to_slack(webhook, message)
+    status = send_to_slack(webhook, blocks, fallback)
     print(f"\n슬랙 발송 완료 (status {status})\n")
 
 
@@ -341,20 +386,20 @@ def run_daily(mod, targets, today, webhook, dry_run):
     vacation_items, tomorrow_items, submission_items, tomorrow_meal = collect_daily(
         mod, targets, today
     )
-    message = build_daily_message(
-        vacation_items, tomorrow_items, submission_items, tomorrow_meal
+    blocks, fallback = build_blocks_daily(
+        vacation_items, tomorrow_items, submission_items, tomorrow_meal, today
     )
-    send_or_print(webhook, message, dry_run, f"{today} 데일리")
+    send_or_print(webhook, blocks, fallback, dry_run, f"{today} 데일리")
 
     if today.day == 1:
         start, end = month_range(today.year, today.month)
         schedule_items, submission_items = collect_range(mod, targets, start, end)
-        message = build_period_message(
+        blocks, fallback = build_blocks_period(
             f"🏫 {today.month}월 유치원 알림 (월간 요약)",
             schedule_items, submission_items,
             "이번 달은 특별한 일정 없어요",
         )
-        send_or_print(webhook, message, dry_run, f"{today} 월간")
+        send_or_print(webhook, blocks, fallback, dry_run, f"{today} 월간")
 
 
 def run_weekly(mod, targets, today, webhook, dry_run):
@@ -362,12 +407,12 @@ def run_weekly(mod, targets, today, webhook, dry_run):
     end = today + datetime.timedelta(days=7)
     schedule_items, submission_items = collect_range(mod, targets, start, end)
     label = f"{start.month}/{start.day}~{end.month}/{end.day}"
-    message = build_period_message(
+    blocks, fallback = build_blocks_period(
         f"🏫 {label} 유치원 알림 (주간 요약)",
         schedule_items, submission_items,
         "다음 주는 특별한 일정 없어요",
     )
-    send_or_print(webhook, message, dry_run, f"{today} 주간")
+    send_or_print(webhook, blocks, fallback, dry_run, f"{today} 주간")
 
 
 def main():
@@ -384,7 +429,7 @@ def main():
 
     mod = load_notion()
     targets = load_targets()
-    webhook = load_slack_webhook() if not args.dry_run else load_slack_webhook()
+    webhook = load_slack_webhook()
 
     if args.weekly:
         run_weekly(mod, targets, today, webhook, args.dry_run)
