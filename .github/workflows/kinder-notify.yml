@@ -2,8 +2,9 @@ name: 유치원 일정 슬랙 알림
 
 on:
   schedule:
-    # 매일 아침 7시 KST = 전날 22:00 UTC
-    - cron: '0 22 * * *'
+    # 매일 아침 6시 반 KST = 전날 21:30 UTC
+    # 크론이 실제로 15~30분씩 밀려서, 7시 전에 받으려면 이만큼 당겨둬야 한다.
+    - cron: '30 21 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
