@@ -168,6 +168,11 @@ def app_link_block():
     return context_block(f"🔗 <{ACADEMY_APP_URL}|학원 스케줄 관리 앱 열기>")
 
 
+# 빈 줄 한 칸. 슬랙은 section 텍스트 끝의 개행·공백을 잘라내서 "\n"만으로는
+# 빈 줄이 안 생긴다. 잘리지 않는 non-breaking space 한 글자를 넣어 자리를 만든다.
+BLANK_ROW = " "
+
+
 def academy_row(schedule):
     """'발레 : 라푸앙트' 형태의 학원 이름 줄. 종류가 없으면 이름만."""
     kind = schedule["academyType"]

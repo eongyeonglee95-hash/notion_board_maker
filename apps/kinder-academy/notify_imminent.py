@@ -44,6 +44,7 @@ def build_blocks(imminent, day_label):
         lines = [f"⏰ *{s['endTime']} 하원* ⏰"]
         lines.append(ac.academy_row(s))
         lines.extend(ac.pickup_rows(s))
+        lines.append(ac.BLANK_ROW)
         blocks.append(ac.section_mrkdwn("\n".join(lines)))
         if i < len(imminent) - 1:
             blocks.append(ac.divider_block())
