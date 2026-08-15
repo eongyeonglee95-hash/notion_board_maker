@@ -41,6 +41,10 @@ def build_blocks(imminent, day_label):
         if i < len(imminent) - 1:
             blocks.append(ac.divider_block())
 
+    mentions = ac.mention_text()
+    if mentions:
+        blocks.append(ac.section_mrkdwn(mentions))
+
     blocks.append(ac.app_link_block())
     names = ", ".join(s["academy"] for s in imminent)
     fallback = f"하원 30분 전 · {day_label} · {names}"
@@ -84,7 +88,10 @@ def main():
 
     blocks, fallback = build_blocks(imminent, day_label)
     webhook = ac.load_slack_webhook()
-    ac.send_or_print(webhook, blocks, fallback, args.dry_run, f"{now} 하원임박")
+    ac.send_or_print(
+        webhook, blocks, fallback, args.dry_run, f"{now} 하원임박",
+        color=ac.COLOR_IMMINENT,
+    )
 
 
 if __name__ == "__main__":

@@ -28,6 +28,15 @@ ACADEMY_APP_URL = "https://kids-academy-planner.web.app/"
 PICKUP_LEAD_MINUTES = 30
 PICKUP_WINDOW_MINUTES = 10  # notify_imminent.py 의 cron 주기와 반드시 같아야 한다
 
+# 메시지 왼쪽 색 띠. 여러 알림이 쌓였을 때 색으로 종류를 구분한다.
+COLOR_DAILY = "#f2c744"    # 학원 아침 요약 — 노랑
+COLOR_IMMINENT = "#e01e5a"  # 하원 임박 — 빨강(지금 움직여야 하는 것)
+
+# 하원 임박 알림에서 멘션할 사람들의 슬랙 멤버 ID.
+# 채널 메시지는 멘션이 없으면 푸시가 안 울려서, 급한 알림만 멘션을 붙인다.
+# 슬랙 프로필 > 더보기(⋯) > 멤버 ID 복사 로 얻는다.
+MENTION_USER_IDS = []
+
 KST = datetime.timezone(datetime.timedelta(hours=9))
 
 DAYS = ["월", "화", "수", "목", "금", "토"]
@@ -143,6 +152,11 @@ def context_block(text):
     return {"type": "context", "elements": [{"type": "mrkdwn", "text": text}]}
 
 
+def mention_text():
+    """멘션할 사람이 설정돼 있으면 '<@U123> <@U456>' 형태로 돌려준다."""
+    return " ".join(f"<@{uid}>" for uid in MENTION_USER_IDS)
+
+
 def app_link_block():
     return context_block(f"🔗 <{ACADEMY_APP_URL}|학원 스케줄 관리 앱 열기>")
 
@@ -161,8 +175,20 @@ def academy_detail_line(schedule):
     return " · ".join(parts)
 
 
-def send_to_slack(webhook_url, blocks, fallback):
-    body = json.dumps({"text": fallback, "blocks": blocks}).encode("utf-8")
+def send_to_slack(webhook_url, blocks, fallback, color=None):
+    """color 를 주면 메시지 왼쪽에 색 띠가 붙는다(attachments 의 유일한 색 표현 수단).
+
+    여러 알림이 쌓였을 때 색만 보고 유치원/학원/임박을 구분하려는 것이다.
+    """
+    if color:
+        payload = {
+            "text": fallback,
+            "attachments": [{"color": color, "blocks": blocks}],
+        }
+    else:
+        payload = {"text": fallback, "blocks": blocks}
+
+    body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         webhook_url, data=body, method="POST",
         headers={"Content-Type": "application/json"},
@@ -190,7 +216,7 @@ def print_blocks(blocks):
             print("  " + " / ".join(e["text"] for e in b["elements"]))
 
 
-def send_or_print(webhook, blocks, fallback, dry_run, label):
+def send_or_print(webhook, blocks, fallback, dry_run, label, color=None):
     if blocks is None:
         print(f"[{label}] 알릴 것이 없습니다.")
         return
@@ -204,5 +230,5 @@ def send_or_print(webhook, blocks, fallback, dry_run, label):
             "\nSLACK_WEBHOOK_URL 이 없습니다. .env 에 추가해주세요:\n"
             "  SLACK_WEBHOOK_URL=https://hooks.slack.com/services/..."
         )
-    status = send_to_slack(webhook, blocks, fallback)
+    status = send_to_slack(webhook, blocks, fallback, color)
     print(f"\n슬랙 발송 완료 (status {status})\n")

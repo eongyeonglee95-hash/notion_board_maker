@@ -60,7 +60,10 @@ def main():
     blocks, fallback = build_blocks(today_items, day_label, weekday_kr)
 
     webhook = ac.load_slack_webhook()
-    ac.send_or_print(webhook, blocks, fallback, args.dry_run, f"{today} 학원 아침요약")
+    ac.send_or_print(
+        webhook, blocks, fallback, args.dry_run, f"{today} 학원 아침요약",
+        color=ac.COLOR_DAILY,
+    )
 
 
 if __name__ == "__main__":

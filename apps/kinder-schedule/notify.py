@@ -43,6 +43,8 @@ CONFIG_JSON = os.path.join(HERE, "config.json")
 
 D_DAYS = (7, 3, 1)  # 휴가필요·제출물 알림은 이 날짜에만 발송한다
 
+COLOR_KINDER = "#3182f6"  # 메시지 왼쪽 색 띠 — 유치원은 파랑
+
 
 def load_notion():
     if not os.path.exists(NOTION_PY):
@@ -396,7 +398,12 @@ def build_blocks_period(title, schedule_items, submission_items, empty_text, das
 
 
 def send_to_slack(webhook_url, blocks, fallback):
-    body = json.dumps({"text": fallback, "blocks": blocks}).encode("utf-8")
+    # 왼쪽 색 띠. 학원 알림(노랑·빨강)과 한눈에 구분하기 위한 것이다.
+    payload = {
+        "text": fallback,
+        "attachments": [{"color": COLOR_KINDER, "blocks": blocks}],
+    }
+    body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         webhook_url, data=body, method="POST",
         headers={"Content-Type": "application/json"},
