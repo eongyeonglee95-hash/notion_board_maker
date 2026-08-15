@@ -29,8 +29,8 @@ PICKUP_LEAD_MINUTES = 30
 PICKUP_WINDOW_MINUTES = 10  # notify_imminent.py 의 cron 주기와 반드시 같아야 한다
 
 # 메시지 왼쪽 색 띠. 여러 알림이 쌓였을 때 색으로 종류를 구분한다.
-COLOR_DAILY = "#e8912d"    # 학원 아침 요약 — 주황(앱 아이콘과 같은 색)
-COLOR_IMMINENT = "#d81b3c"  # 하원 임박 — 빨강(지금 움직여야 하는 것)
+COLOR_DAILY = "#f2c744"    # 학원 아침 요약 — 노랑
+COLOR_IMMINENT = "#e01e5a"  # 하원 임박 — 빨강(지금 움직여야 하는 것)
 
 # 메시지 아바타(이모지)와 표시 이름. 채널에 알림이 섞여 쌓이므로,
 # 색 띠보다 크게 보이는 아바타로 종류를 구분한다.
