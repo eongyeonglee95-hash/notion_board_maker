@@ -136,6 +136,12 @@ def main():
     weekday_kr = "월화수목금토일"[today.weekday()]
     day_label = f"{today.month}/{today.day}"
 
+    # 스케줄 요일이 월~토라 일요일은 늘 빈 날로 잡힌다. "도보하원" 메시지를
+    # 매주 한 번씩 보내봐야 정보가 없어서 아예 거른다.
+    if weekday_kr == "일":
+        print(f"[{today} 학원 아침요약] 일요일이라 보내지 않습니다.")
+        return
+
     schedules = ac.load_sample_schedules() if args.use_sample_data else ac.fetch_schedules()
     today_items = ac.schedules_for_day(schedules, weekday_kr) if weekday_kr in ac.DAYS else []
 
