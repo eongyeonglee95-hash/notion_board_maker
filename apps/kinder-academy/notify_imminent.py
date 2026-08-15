@@ -30,7 +30,7 @@ def should_alert(now, pickup_dt):
 
 
 def build_blocks(imminent, day_label):
-    blocks = [ac.header_block("⏰ 하원 30분 전이에요")]
+    blocks = [ac.header_block("🚨 하원 30분 전 🚨")]
 
     for i, s in enumerate(imminent):
         lines = [f"*{s['academyType']}* {s['academy']} — {s['endTime']} 하원"]
