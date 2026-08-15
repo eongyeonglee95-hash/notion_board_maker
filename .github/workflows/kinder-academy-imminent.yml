@@ -1,0 +1,38 @@
+name: 학원 하원 임박 알림
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # 매 10분 — notify_imminent.py 의 판정 윈도우 폭과 반드시 일치해야 함
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '연습 실행 (Slack 발송 안 함)'
+        type: boolean
+        default: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/kinder-academy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Firebase 서비스 계정 키 복원
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > firebase-service-account.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: apps/kinder-academy/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: 임박 알림 확인 및 발송
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python3 notify_imminent.py ${{ inputs.dry_run && '--dry-run' || '' }}

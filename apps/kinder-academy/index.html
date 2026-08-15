@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>학원 스케줄 관리</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <div class="header-main">
+        <p class="eyebrow">Academy Weekly Planner</p>
+        <h1>학원 스케줄 관리</h1>
+        <div class="current-time-box">
+          <span id="currentDate">날짜 확인 중</span>
+          <span id="currentTime">시간 확인 중</span>
+          <label class="board-date-picker">
+            보기
+            <input id="boardDateInput" type="date" />
+          </label>
+        </div>
+      </div>
+      <div class="status-action-row">
+        <span class="pickup-countdown" id="pickupCountdown">하원 시간 확인 중</span>
+        <div class="header-actions">
+          <button class="secondary-button" id="sharePageButton">공유하기</button>
+          <button class="primary-button" id="openAddForm">+ 일정 등록</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="pickup-alert" id="pickupAlert" hidden></section>
+
+    <main class="board" id="scheduleBoard" aria-label="요일별 스케쥴표"></main>
+
+    <dialog class="schedule-dialog" id="scheduleDialog">
+      <form class="schedule-form" id="scheduleForm" method="dialog">
+        <div class="form-header">
+          <div>
+            <p class="eyebrow">Schedule</p>
+            <h2>일정 등록</h2>
+          </div>
+          <button class="icon-button" type="button" id="closeForm" aria-label="닫기">×</button>
+        </div>
+
+        <label>
+          요일
+          <select id="dayInput" required>
+            <option value="월">월요일</option>
+            <option value="화">화요일</option>
+            <option value="수">수요일</option>
+            <option value="목">목요일</option>
+            <option value="금">금요일</option>
+            <option value="토">토요일</option>
+          </select>
+        </label>
+
+        <input id="editIdInput" type="hidden" />
+
+        <label>
+          날짜
+          <input id="dateInput" type="date" required />
+        </label>
+
+        <label>
+          등원 시간
+          <input id="startTimeInput" type="time" required />
+        </label>
+
+        <label>
+          하원 시간
+          <input id="endTimeInput" type="time" required />
+        </label>
+
+        <label>
+          학원종류 아이콘명
+          <input id="academyTypeInput" type="text" placeholder="예: 영어, 태권도, 미술" required />
+        </label>
+
+        <label>
+          학원명
+          <input id="academyInput" type="text" placeholder="예: 튼튼영어, 새싹태권도" required />
+        </label>
+
+        <label>
+          하원 담당자 전화번호
+          <input id="managerPhoneInput" type="tel" placeholder="예: 010-1234-5678" />
+        </label>
+
+        <label>
+          학원 전화번호
+          <input id="academyPhoneInput" type="tel" placeholder="예: 02-123-4567" />
+        </label>
+
+        <label>
+          학원 URL
+          <input id="academyUrlInput" type="url" placeholder="예: https://academy.example.com" />
+        </label>
+
+        <label>
+          하차장소
+          <input id="dropoffPlaceInput" type="text" placeholder="예: 아파트 정문, 집 앞, 3층 로비" />
+        </label>
+
+        <label>
+          기타 메모
+          <textarea id="memoInput" rows="3" placeholder="예: 3층 로비에서 픽업, 집 drop off"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button class="secondary-button" type="button" id="cancelForm">취소</button>
+          <button class="primary-button" type="submit" id="submitButton">등록</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="script.js"></script>
+  </body>
+</html>

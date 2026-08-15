@@ -1,0 +1,80 @@
+[
+  {
+    "id": "sample-mon-1",
+    "day": "월",
+    "startTime": "15:00",
+    "endTime": "16:30",
+    "academyType": "영어",
+    "academy": "테스트영어학원",
+    "managerPhone": "010-0000-0001",
+    "academyPhone": "02-000-0001",
+    "academyUrl": "https://example.com/english",
+    "dropoffPlace": "아파트 정문",
+    "memo": "테스트용 샘플 데이터"
+  },
+  {
+    "id": "sample-tue-1",
+    "day": "화",
+    "startTime": "17:15",
+    "endTime": "18:42",
+    "academyType": "발레",
+    "academy": "테스트발레학원",
+    "managerPhone": "010-0000-0002",
+    "academyPhone": "",
+    "academyUrl": "",
+    "dropoffPlace": "",
+    "memo": ""
+  },
+  {
+    "id": "sample-wed-1",
+    "day": "수",
+    "startTime": "14:00",
+    "endTime": "15:00",
+    "academyType": "미술",
+    "academy": "테스트미술학원",
+    "managerPhone": "",
+    "academyPhone": "02-000-0003",
+    "academyUrl": "",
+    "dropoffPlace": "집 앞",
+    "memo": ""
+  },
+  {
+    "id": "sample-thu-1",
+    "day": "목",
+    "startTime": "16:00",
+    "endTime": "17:00",
+    "academyType": "피아노",
+    "academy": "테스트피아노학원",
+    "managerPhone": "010-0000-0004",
+    "academyPhone": "",
+    "academyUrl": "",
+    "dropoffPlace": "",
+    "memo": ""
+  },
+  {
+    "id": "sample-fri-1",
+    "day": "금",
+    "startTime": "10:30",
+    "endTime": "12:00",
+    "academyType": "태권도",
+    "academy": "테스트태권도",
+    "managerPhone": "010-0000-0005",
+    "academyPhone": "02-000-0005",
+    "academyUrl": "https://example.com/taekwondo",
+    "dropoffPlace": "아파트 정문",
+    "memo": ""
+  },
+  {
+    "id": "sample-sat-1",
+    "day": "토",
+    "startTime": "10:30",
+    "endTime": "12:00",
+    "academyType": "태권도",
+    "academy": "테스트태권도",
+    "managerPhone": "010-0000-0005",
+    "academyPhone": "02-000-0005",
+    "academyUrl": "https://example.com/taekwondo",
+    "dropoffPlace": "아파트 정문",
+    "memo": ""
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".*",
+      "**/.*",
+      ".omc/**",
+      "**/node_modules/**",
+      "__pycache__/**",
+      "academy_common.py",
+      "notify_daily.py",
+      "notify_imminent.py",
+      "requirements.txt",
+      "sample_schedules.json",
+      "AGENTS.md"
+    ]
+  }
+}

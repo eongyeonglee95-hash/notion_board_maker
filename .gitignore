@@ -44,3 +44,9 @@ apps/kinder-schedule/config.json
 # 개인 세션 훅 설정 · 마지막 확인 날짜 캐시
 .claude/settings.local.json
 .claude/.last-kinder-check
+
+# Firebase 서비스 계정 키(Firestore 관리자 권한) — 로컬 테스트용, 절대 커밋 금지
+apps/kinder-academy/firebase-service-account.json
+
+# Firebase 배포 캐시
+.firebase/
