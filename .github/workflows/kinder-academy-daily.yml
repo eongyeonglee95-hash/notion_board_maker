@@ -14,6 +14,10 @@ on:
         description: '테스트용 — 이 날짜인 척한다 (YYYY-MM-DD, 비우면 오늘)'
         type: string
         default: ''
+      pickup_in:
+        description: '테스트용 — 하원 알림을 지금부터 N분 뒤로 예약 (비우면 하원 30분 전)'
+        type: string
+        default: ''
 
 jobs:
   notify:
@@ -50,4 +54,5 @@ jobs:
         run: |
           python3 notify_daily.py \
             ${{ inputs.dry_run && '--dry-run' || '' }} \
-            ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
+            ${{ inputs.date && format('--date {0}', inputs.date) || '' }} \
+            ${{ inputs.pickup_in && format('--pickup-in {0}', inputs.pickup_in) || '' }}

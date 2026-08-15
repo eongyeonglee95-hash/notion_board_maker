@@ -61,9 +61,27 @@ def pickup_alert_time(today, end_time):
     return pickup - datetime.timedelta(minutes=ac.PICKUP_LEAD_MINUTES)
 
 
-def schedule_pickup_alerts(token, channel, schedules_today, today, now, dry_run):
-    """오늘 하원 30분 전 알림들을 슬랙에 예약한다."""
+def schedule_pickup_alerts(token, channel, schedules_today, today, now, dry_run,
+                           pickup_in=None, real_now=None):
+    """오늘 하원 30분 전 알림들을 슬랙에 예약한다.
+
+    pickup_in 을 주면 테스트 모드다. 하원 시각을 무시하고 지금부터 그만큼 뒤로
+    건다. 예약이 실제로 그 시각에 도착하는지 몇 시간 기다리지 않고 확인하려고.
+    """
     planned = []
+
+    if pickup_in is not None:
+        base = real_now + datetime.timedelta(minutes=pickup_in)
+        # 여러 건이면 1분씩 벌려서 한꺼번에 쏟아지지 않게 한다.
+        planned = [(s, base + datetime.timedelta(minutes=i))
+                   for i, s in enumerate(schedules_today)]
+        print(f"  (테스트) 하원 시각 무시하고 {pickup_in}분 뒤부터 예약합니다.")
+        if not planned:
+            print("  오늘 학원이 없어 예약할 게 없습니다.")
+            return
+        _send_planned(token, channel, planned, dry_run)
+        return
+
     for s in schedules_today:
         if not s["endTime"]:
             continue
@@ -80,6 +98,10 @@ def schedule_pickup_alerts(token, channel, schedules_today, today, now, dry_run)
         print("  예약할 하원 알림이 없습니다.")
         return
 
+    _send_planned(token, channel, planned, dry_run)
+
+
+def _send_planned(token, channel, planned, dry_run):
     for s, alert_at in planned:
         blocks, fallback = ac.build_pickup_blocks(s)
         print(f"  · {alert_at:%H:%M} 예약 — {fallback}")
@@ -101,9 +123,12 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="발송·예약하지 않고 출력만")
     parser.add_argument("--date", help="오늘 날짜를 이걸로 가정한다 (YYYY-MM-DD)")
     parser.add_argument("--use-sample-data", action="store_true", help="Firestore 대신 sample_schedules.json 사용")
+    parser.add_argument("--pickup-in", type=int, metavar="분",
+                        help="테스트용 — 하원 시각 무시하고 지금부터 N분 뒤로 예약")
     args = parser.parse_args()
 
-    now = ac.now_kst()
+    real_now = ac.now_kst()
+    now = real_now
     today = datetime.date.fromisoformat(args.date) if args.date else now.date()
     if args.date:
         # 날짜를 갈아끼우면 "지금"도 그 날 아침으로 옮겨야 예약 시각 비교가 맞는다.
@@ -145,11 +170,15 @@ def main():
 
     if not args.dry_run:
         # 아침 잡을 두 번 돌려도 같은 알림이 두 번 오지 않도록 오늘 예약을 먼저 지운다.
-        day_end = datetime.datetime.combine(today, datetime.time(23, 59), tzinfo=ac.KST)
-        removed = ac.clear_scheduled(token, channel, now.timestamp(), day_end.timestamp())
+        # 테스트 모드는 --date 로 날짜를 갈아끼울 수 있으니 진짜 오늘을 기준으로 지운다.
+        base = real_now if args.pickup_in is not None else now
+        day_end = datetime.datetime.combine(
+            base.date(), datetime.time(23, 59), tzinfo=ac.KST)
+        removed = ac.clear_scheduled(token, channel, base.timestamp(), day_end.timestamp())
         if removed:
             print(f"  · 기존 예약 {removed}건 취소")
-    schedule_pickup_alerts(token, channel, today_items, today, now, args.dry_run)
+    schedule_pickup_alerts(token, channel, today_items, today, now, args.dry_run,
+                           pickup_in=args.pickup_in, real_now=real_now)
 
 
 if __name__ == "__main__":
