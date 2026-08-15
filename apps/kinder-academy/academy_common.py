@@ -32,6 +32,13 @@ PICKUP_WINDOW_MINUTES = 10  # notify_imminent.py 의 cron 주기와 반드시 �
 COLOR_DAILY = "#f2c744"    # 학원 아침 요약 — 노랑
 COLOR_IMMINENT = "#e01e5a"  # 하원 임박 — 빨강(지금 움직여야 하는 것)
 
+# 메시지 아바타(이모지)와 표시 이름. 채널에 알림이 섞여 쌓이므로,
+# 색 띠보다 크게 보이는 아바타로 종류를 구분한다.
+ICON_DAILY = ":school_satchel:"
+NAME_DAILY = "학원 스케줄"
+ICON_IMMINENT = ":rotating_light:"
+NAME_IMMINENT = "하원 알림"
+
 # 하원 임박 알림에서 멘션할 사람들의 슬랙 멤버 ID.
 # 채널 메시지는 멘션이 없으면 푸시가 안 울려서, 급한 알림만 멘션을 붙인다.
 # 슬랙 프로필 > 더보기(⋯) > 멤버 ID 복사 로 얻는다.
@@ -175,10 +182,10 @@ def academy_detail_line(schedule):
     return " · ".join(parts)
 
 
-def send_to_slack(webhook_url, blocks, fallback, color=None):
-    """color 를 주면 메시지 왼쪽에 색 띠가 붙는다(attachments 의 유일한 색 표현 수단).
+def send_to_slack(webhook_url, blocks, fallback, color=None, icon=None, name=None):
+    """color 는 왼쪽 색 띠, icon·name 은 메시지 아바타와 표시 이름을 바꾼다.
 
-    여러 알림이 쌓였을 때 색만 보고 유치원/학원/임박을 구분하려는 것이다.
+    한 채널에 유치원·학원 알림이 섞여 쌓이므로 종류를 한눈에 구분하려는 것이다.
     """
     if color:
         payload = {
@@ -187,6 +194,11 @@ def send_to_slack(webhook_url, blocks, fallback, color=None):
         }
     else:
         payload = {"text": fallback, "blocks": blocks}
+
+    if icon:
+        payload["icon_emoji"] = icon
+    if name:
+        payload["username"] = name
 
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
@@ -216,7 +228,8 @@ def print_blocks(blocks):
             print("  " + " / ".join(e["text"] for e in b["elements"]))
 
 
-def send_or_print(webhook, blocks, fallback, dry_run, label, color=None):
+def send_or_print(webhook, blocks, fallback, dry_run, label,
+                  color=None, icon=None, name=None):
     if blocks is None:
         print(f"[{label}] 알릴 것이 없습니다.")
         return
@@ -230,5 +243,5 @@ def send_or_print(webhook, blocks, fallback, dry_run, label, color=None):
             "\nSLACK_WEBHOOK_URL 이 없습니다. .env 에 추가해주세요:\n"
             "  SLACK_WEBHOOK_URL=https://hooks.slack.com/services/..."
         )
-    status = send_to_slack(webhook, blocks, fallback, color)
+    status = send_to_slack(webhook, blocks, fallback, color, icon, name)
     print(f"\n슬랙 발송 완료 (status {status})\n")

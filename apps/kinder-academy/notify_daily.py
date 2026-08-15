@@ -62,7 +62,7 @@ def main():
     webhook = ac.load_slack_webhook()
     ac.send_or_print(
         webhook, blocks, fallback, args.dry_run, f"{today} 학원 아침요약",
-        color=ac.COLOR_DAILY,
+        color=ac.COLOR_DAILY, icon=ac.ICON_DAILY, name=ac.NAME_DAILY,
     )
 
 

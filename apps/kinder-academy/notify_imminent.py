@@ -90,7 +90,7 @@ def main():
     webhook = ac.load_slack_webhook()
     ac.send_or_print(
         webhook, blocks, fallback, args.dry_run, f"{now} 하원임박",
-        color=ac.COLOR_IMMINENT,
+        color=ac.COLOR_IMMINENT, icon=ac.ICON_IMMINENT, name=ac.NAME_IMMINENT,
     )
 
 

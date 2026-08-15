@@ -44,6 +44,8 @@ CONFIG_JSON = os.path.join(HERE, "config.json")
 D_DAYS = (7, 3, 1)  # 휴가필요·제출물 알림은 이 날짜에만 발송한다
 
 COLOR_KINDER = "#3182f6"  # 메시지 왼쪽 색 띠 — 유치원은 파랑
+ICON_KINDER = ":school:"  # 아바타. 학원 알림과 한눈에 구분하려는 것
+NAME_KINDER = "유치원 알림"
 
 
 def load_notion():
@@ -402,6 +404,8 @@ def send_to_slack(webhook_url, blocks, fallback):
     payload = {
         "text": fallback,
         "attachments": [{"color": COLOR_KINDER, "blocks": blocks}],
+        "icon_emoji": ICON_KINDER,
+        "username": NAME_KINDER,
     }
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
