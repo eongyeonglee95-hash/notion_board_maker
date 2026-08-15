@@ -14,6 +14,7 @@ import datetime
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -166,8 +167,14 @@ def send_to_slack(webhook_url, blocks, fallback):
         webhook_url, data=body, method="POST",
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        return resp.status
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return resp.status
+    except urllib.error.HTTPError as e:
+        # 슬랙은 거부 사유를 본문에 담아 준다(invalid_payload, channel_not_found 등).
+        # 이걸 안 보여주면 원인을 찾을 수 없어 그대로 드러낸다.
+        detail = e.read().decode("utf-8", "replace").strip()
+        sys.exit(f"슬랙 발송 실패 (HTTP {e.code}): {detail}")
 
 
 def print_blocks(blocks):
