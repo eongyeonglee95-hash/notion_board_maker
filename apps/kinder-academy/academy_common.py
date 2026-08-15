@@ -164,10 +164,6 @@ def mention_text():
     return " ".join(f"<@{uid}>" for uid in MENTION_USER_IDS)
 
 
-def app_link_block():
-    return context_block(f"🔗 <{ACADEMY_APP_URL}|학원 스케줄 관리 앱 열기>")
-
-
 def app_button_block(text="학원 스케줄 확인하기"):
     """링크 한 줄 대신 누를 수 있는 버튼. 모바일에서 손가락으로 짚기 쉽다."""
     return {

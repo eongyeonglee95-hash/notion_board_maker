@@ -22,7 +22,7 @@ def build_blocks(schedules_today, day_label, weekday_kr):
 
     if not schedules_today:
         blocks.append(ac.section_mrkdwn("🚶 오늘은 학원 없이 도보하원 하는 날이에요"))
-        blocks.append(ac.app_link_block())
+        blocks.append(ac.app_button_block())
         return blocks, f"학원 스케줄 · {day_label}({weekday_kr}) — 도보하원"
 
     for i, s in enumerate(schedules_today):
@@ -39,7 +39,7 @@ def build_blocks(schedules_today, day_label, weekday_kr):
         if i < len(schedules_today) - 1:
             blocks.append(ac.divider_block())
 
-    blocks.append(ac.app_link_block())
+    blocks.append(ac.app_button_block())
     fallback = f"학원 스케줄 · {day_label}({weekday_kr}) — {len(schedules_today)}건"
     return blocks, fallback
 
