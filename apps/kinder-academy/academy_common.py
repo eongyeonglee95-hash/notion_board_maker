@@ -23,7 +23,7 @@ SERVICE_ACCOUNT_JSON = os.path.join(HERE, "firebase-service-account.json")
 SAMPLE_DATA_JSON = os.path.join(HERE, "sample_schedules.json")
 
 FIRESTORE_COLLECTION = "schedules"
-KIDSPLANNER_URL = "https://eongyeonglee95-hash.github.io/KidsPlanner/"
+KIDSPLANNER_URL = "https://kidsplanner-4c634.web.app/"
 PICKUP_LEAD_MINUTES = 30
 PICKUP_WINDOW_MINUTES = 10  # notify_imminent.py 의 cron 주기와 반드시 같아야 한다
 
