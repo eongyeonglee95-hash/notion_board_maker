@@ -31,8 +31,12 @@ def should_alert(now, pickup_dt):
 
 def build_blocks(imminent, day_label):
     # 급한 알림이라 채널을 스크롤하다 눈에 걸리도록 아이콘을 일부러 많이 쓴다.
+    # 위아래 사이렌 띠로 감싸서 채널을 스크롤할 때 무조건 걸리게 한다.
+    siren_band = "🚨🚨🚨🚨🚨🚨🚨🚨🚨"
     blocks = [
-        ac.header_block("🚨🚨 하원 30분 전 🚨🚨"),
+        ac.section_mrkdwn(siren_band),
+        ac.header_block("🚨 하원 30분 전 🚨"),
+        ac.section_mrkdwn(siren_band),
         ac.context_block("⏰⏰⏰  지금 준비하세요  🏃‍♀️💨🚗"),
     ]
 
