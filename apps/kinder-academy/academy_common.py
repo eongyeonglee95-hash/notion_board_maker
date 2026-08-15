@@ -281,8 +281,25 @@ def slack_api(method, token, payload):
         sys.exit(f"슬랙 API {method} 실패 (HTTP {e.code}): {detail}")
 
     if not data.get("ok"):
-        sys.exit(f"슬랙 API {method} 실패: {data.get('error')} — {data}")
+        sys.exit(f"슬랙 API {method} 실패: {data.get('error')} — {data}"
+                 + token_hint(data.get("error"), token))
     return data
+
+
+def token_hint(error, token):
+    """인증 오류일 때만, 값이 아니라 '어떤 종류의 토큰인지'만 알려준다.
+
+    앞 5글자(xoxb- 등)와 길이는 비밀이 아니고, 엉뚱한 토큰(xapp-, 서명 시크릿)을
+    넣었는지 한눈에 갈린다. 로그가 공개돼도 안전하도록 나머지는 절대 찍지 않는다.
+    """
+    if error not in ("invalid_auth", "not_authed", "token_revoked", "account_inactive"):
+        return ""
+    kinds = {"xoxb-": "봇 토큰 (맞음)", "xoxp-": "사용자 토큰 (봇 토큰이 필요합니다)",
+             "xapp-": "앱 레벨 토큰 (봇 토큰이 아닙니다)"}
+    kind = kinds.get(token[:5], "슬랙 토큰 형식이 아닙니다 (서명 시크릿을 넣었을 수 있어요)")
+    return (f"\n  힌트: 넣은 값은 '{token[:5]}…' 로 시작하고 길이 {len(token)} — {kind}."
+            "\n  Slack App > OAuth & Permissions > Bot User OAuth Token (xoxb-) 을 넣어야 합니다."
+            "\n  스코프를 추가했다면 Reinstall to Workspace 후 토큰을 다시 복사하세요.")
 
 
 def message_payload(channel, blocks, fallback, color=None, icon=None, name=None):
