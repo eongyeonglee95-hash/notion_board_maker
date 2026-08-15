@@ -42,7 +42,7 @@ def build_blocks(imminent, day_label):
 
     for i, s in enumerate(imminent):
         lines = [f"⏰ *{s['endTime']} 하원* ⏰"]
-        lines.append(f"🎓 *{s['academy']}*")
+        lines.append(ac.academy_row(s))
         lines.extend(ac.pickup_rows(s))
         blocks.append(ac.section_mrkdwn("\n".join(lines)))
         if i < len(imminent) - 1:

@@ -28,7 +28,7 @@ def build_blocks(schedules_today, day_label, weekday_kr):
     for i, s in enumerate(schedules_today):
         # 학원명 / 하원시간 / 하원도우미 / 하차위치를 각각 한 줄씩. 아침에 훑을 때
         # 필요한 건 이 넷뿐이라 등원시간·연락처 같은 나머지는 앱 링크로 넘긴다.
-        lines = [f"🎓 *{s['academy']}*"]
+        lines = [ac.academy_row(s)]
         lines.append(f"🕕 하원 {s['endTime'] or '미정'}")
         lines.extend(ac.pickup_rows(s))
         blocks.append(ac.section_mrkdwn("\n".join(lines)))

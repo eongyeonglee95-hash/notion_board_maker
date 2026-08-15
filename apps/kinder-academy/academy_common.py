@@ -168,6 +168,14 @@ def app_link_block():
     return context_block(f"🔗 <{ACADEMY_APP_URL}|학원 스케줄 관리 앱 열기>")
 
 
+def academy_row(schedule):
+    """'발레 : 라푸앙트' 형태의 학원 이름 줄. 종류가 없으면 이름만."""
+    kind = schedule["academyType"]
+    if kind and kind != "기타":
+        return f"🎓 *{kind} : {schedule['academy']}*"
+    return f"🎓 *{schedule['academy']}*"
+
+
 def pickup_rows(schedule):
     """하원도우미·하차위치를 값 있는 것만 각각 한 줄로.
 
