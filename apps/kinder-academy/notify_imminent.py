@@ -30,13 +30,16 @@ def should_alert(now, pickup_dt):
 
 
 def build_blocks(imminent, day_label):
-    blocks = [ac.header_block("🚨 하원 30분 전 🚨")]
+    # 급한 알림이라 채널을 스크롤하다 눈에 걸리도록 아이콘을 일부러 많이 쓴다.
+    blocks = [
+        ac.header_block("🚨🚨 하원 30분 전 🚨🚨"),
+        ac.context_block("⏰⏰⏰  지금 준비하세요  🏃‍♀️💨🚗"),
+    ]
 
     for i, s in enumerate(imminent):
-        lines = [f"*{s['academyType']}* {s['academy']} — {s['endTime']} 하원"]
-        detail = ac.academy_detail_line(s)
-        if detail:
-            lines.append(detail)
+        lines = [f"⏰ *{s['endTime']} 하원* ⏰"]
+        lines.append(f"🎓 *{s['academy']}*")
+        lines.extend(ac.pickup_rows(s))
         blocks.append(ac.section_mrkdwn("\n".join(lines)))
         if i < len(imminent) - 1:
             blocks.append(ac.divider_block())

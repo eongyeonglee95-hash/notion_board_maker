@@ -168,18 +168,18 @@ def app_link_block():
     return context_block(f"🔗 <{ACADEMY_APP_URL}|학원 스케줄 관리 앱 열기>")
 
 
-def academy_detail_line(schedule):
-    """하원도우미/학원 전화, 홈페이지, 하차장소를 값 있는 것만 한 줄로."""
-    parts = []
+def pickup_rows(schedule):
+    """하원도우미·하차위치를 값 있는 것만 각각 한 줄로.
+
+    학원 전화·홈페이지는 급할 때 볼 정보가 아니라서 슬랙에는 싣지 않는다
+    (필요하면 앱 링크로 들어가서 본다).
+    """
+    rows = []
     if schedule["managerPhone"]:
-        parts.append(f"📞 하원도우미 {schedule['managerPhone']}")
-    if schedule["academyPhone"]:
-        parts.append(f"☎️ 학원 {schedule['academyPhone']}")
-    if schedule["academyUrl"]:
-        parts.append(f"🔗 {schedule['academyUrl']}")
+        rows.append(f"🧑‍✈️ 하원도우미 {schedule['managerPhone']}")
     if schedule["dropoffPlace"]:
-        parts.append(f"📍 하차: {schedule['dropoffPlace']}")
-    return " · ".join(parts)
+        rows.append(f"📍 하차 {schedule['dropoffPlace']}")
+    return rows
 
 
 def send_to_slack(webhook_url, blocks, fallback, color=None, icon=None, name=None):
