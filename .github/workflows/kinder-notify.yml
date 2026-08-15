@@ -4,7 +4,16 @@ on:
   schedule:
     # 매일 아침 7시 KST = 전날 22:00 UTC
     - cron: '0 22 * * *'
-  workflow_dispatch: {}  # 수동 실행용 (테스트할 때 사용)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '연습 실행 (Slack 발송 안 함)'
+        type: boolean
+        default: false
+      date:
+        description: '테스트용 — 이 날짜인 척한다 (YYYY-MM-DD, 비우면 오늘)'
+        type: string
+        default: ''
 
 jobs:
   notify:
@@ -26,7 +35,10 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: python3 apps/kinder-schedule/notify.py
+        run: |
+          python3 apps/kinder-schedule/notify.py \
+            ${{ inputs.dry_run && '--dry-run' || '' }} \
+            ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
 
       - name: 캘린더(ICS) 구독용 Gist 갱신
         env:
