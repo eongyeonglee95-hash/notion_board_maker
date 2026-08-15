@@ -1,4 +1,4 @@
-name: 학원 스케줄 아침 요약
+name: 학원 스케줄 아침 요약 + 하원 알림 예약
 
 on:
   schedule:
@@ -37,10 +37,16 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: 아침 요약 발송
+      - name: 아침 요약 발송 + 하원 알림 예약
         env:
+          # 봇 토큰이 있으면 chat.postMessage 로 보내고 하원 알림을 예약한다.
+          # 없으면 웹훅으로 요약만 보내고 예약은 건너뛴다.
+          SLACK_BOT_TOKEN_ACADEMY: ${{ secrets.SLACK_BOT_TOKEN_ACADEMY }}
+          SLACK_CHANNEL_ACADEMY: ${{ secrets.SLACK_CHANNEL_ACADEMY }}
           SLACK_WEBHOOK_URL_ACADEMY: ${{ secrets.SLACK_WEBHOOK_URL_ACADEMY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          # 아이 이름 문구. 저장소가 공개라 소스가 아니라 secret 으로 넣는다.
+          ACADEMY_KIDS_LABEL: ${{ secrets.ACADEMY_KIDS_LABEL }}
         run: |
           python3 notify_daily.py \
             ${{ inputs.dry_run && '--dry-run' || '' }} \

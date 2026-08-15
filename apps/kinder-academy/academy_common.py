@@ -24,16 +24,10 @@ SERVICE_ACCOUNT_JSON = os.path.join(HERE, "firebase-service-account.json")
 SAMPLE_DATA_JSON = os.path.join(HERE, "sample_schedules.json")
 
 FIRESTORE_COLLECTION = "schedules"
-NOTIFY_STATE_COLLECTION = "notify_state"
 ACADEMY_APP_URL = "https://kids-academy-planner.web.app/"
 
-# 하원까지 남은 시간이 이 값 이내면 알린다.
-#
-# 원래는 "30분 전 ±5분"인 10분짜리 창이었고, cron 주기(10분)와 폭을 맞춰
-# 상태 저장 없이 중복을 막았다. 그런데 실제로 재보니 GitHub Actions 는 */10 을
-# 19~52분(중앙값 29분) 간격으로밖에 안 돌려서, 10분 창은 거의 항상 건너뛴다.
-# 그래서 창을 넓히고 중복은 Firestore 발송기록(claim_notification)으로 막는다.
-PICKUP_ALERT_WINDOW_MINUTES = 35
+# 하원 몇 분 전에 알릴지. 아침 잡이 이 시각으로 슬랙 예약을 걸어둔다.
+PICKUP_LEAD_MINUTES = 30
 
 # 메시지 왼쪽 색 띠. 여러 알림이 쌓였을 때 색으로 종류를 구분한다.
 COLOR_DAILY = "#f2c744"    # 학원 아침 요약 — 노랑
@@ -135,30 +129,6 @@ def fetch_schedules():
     """Firestore schedules 컬렉션 전체를 정규화해서 가져온다."""
     docs = firestore_client().collection(FIRESTORE_COLLECTION).stream()
     return [parse_schedule(doc.id, doc.to_dict()) for doc in docs]
-
-
-def claim_notification(key):
-    """이 알림을 처음 보내는 것이면 True, 이미 보낸 적 있으면 False.
-
-    판정 창이 cron 주기보다 좁을 수 없게 되면서(윗쪽 PICKUP_ALERT_WINDOW_MINUTES
-    주석 참고) 연속된 실행이 같은 항목을 두 번 잡을 수 있다. 이미 쓰고 있는
-    Firestore 에 발송기록을 남겨 하루에 한 번만 나가게 한다.
-
-    create() 는 문서가 이미 있으면 실패하므로, 두 실행이 겹쳐도 한쪽만 이긴다.
-    """
-    from google.api_core import exceptions as gapi
-
-    doc = firestore_client().collection(NOTIFY_STATE_COLLECTION).document(key)
-    try:
-        doc.create({"sentAt": now_kst().isoformat()})
-        return True
-    except gapi.AlreadyExists:
-        return False
-
-
-def release_notification(key):
-    """발송기록을 지운다. 기록은 남겼는데 슬랙 발송이 실패했을 때 되돌리는 용도."""
-    firestore_client().collection(NOTIFY_STATE_COLLECTION).document(key).delete()
 
 
 def load_sample_schedules():
@@ -269,6 +239,110 @@ def pickup_rows(schedule):
     if schedule["managerPhone"]:
         rows.append(f"📞 하원도우미 {schedule['managerPhone']}")
     return rows
+
+
+# ---------------------------------------------------------------------------
+# 슬랙 Web API — 예약 발송용
+#
+# 웹훅으로는 "지금" 밖에 못 보낸다. 하원 30분 전이라는 정확한 시각에 알리려면
+# 크론이 그 시각에 깨어나야 하는데, GitHub Actions 크론은 20~50분씩 밀린다.
+# 그래서 아침 잡이 한 번 돌면서 chat.scheduleMessage 로 예약만 걸어두고,
+# 실제 발송 시각은 슬랙 서버가 지킨다.
+# ---------------------------------------------------------------------------
+
+SLACK_API_BASE = "https://slack.com/api/"
+
+
+def load_bot_token():
+    """예약 발송용 봇 토큰(xoxb-). 없으면 None → 웹훅 방식으로 떨어진다."""
+    return os.environ.get("SLACK_BOT_TOKEN_ACADEMY", "").strip() or None
+
+
+def load_channel():
+    """봇이 글을 올릴 채널. 채널 ID(C...) 또는 #이름 둘 다 된다."""
+    return os.environ.get("SLACK_CHANNEL_ACADEMY", "").strip() or None
+
+
+def slack_api(method, token, payload):
+    """슬랙 Web API 호출. 슬랙은 실패해도 HTTP 200 에 ok:false 로 답하므로 직접 본다."""
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        SLACK_API_BASE + method, data=body, method="POST",
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": f"Bearer {token}",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "replace").strip()
+        sys.exit(f"슬랙 API {method} 실패 (HTTP {e.code}): {detail}")
+
+    if not data.get("ok"):
+        sys.exit(f"슬랙 API {method} 실패: {data.get('error')} — {data}")
+    return data
+
+
+def message_payload(channel, blocks, fallback, color=None, icon=None, name=None):
+    payload = {"channel": channel, "text": fallback}
+    if color:
+        payload["attachments"] = [{"color": color, "blocks": blocks}]
+    else:
+        payload["blocks"] = blocks
+    if icon:
+        payload["icon_emoji"] = icon
+    if name:
+        payload["username"] = name
+    return payload
+
+
+def post_message(token, channel, blocks, fallback, color=None, icon=None, name=None):
+    return slack_api("chat.postMessage", token,
+                     message_payload(channel, blocks, fallback, color, icon, name))
+
+
+def schedule_message(token, channel, post_at, blocks, fallback,
+                     color=None, icon=None, name=None):
+    """post_at(epoch 초)에 슬랙이 대신 보내도록 예약한다."""
+    payload = message_payload(channel, blocks, fallback, color, icon, name)
+    payload["post_at"] = int(post_at)
+    return slack_api("chat.scheduleMessage", token, payload)
+
+
+def clear_scheduled(token, channel, oldest, latest):
+    """구간 안의 기존 예약을 지운다. 아침 잡을 두 번 돌려도 중복 예약이 안 남는다."""
+    data = slack_api("chat.scheduledMessages.list", token, {
+        "channel": channel, "oldest": int(oldest), "latest": int(latest), "limit": 100,
+    })
+    removed = 0
+    for m in data.get("scheduled_messages", []):
+        slack_api("chat.deleteScheduledMessage", token, {
+            "channel": channel, "scheduled_message_id": m["id"],
+        })
+        removed += 1
+    return removed
+
+
+def build_pickup_blocks(schedule, lead_minutes=PICKUP_LEAD_MINUTES):
+    """하원 임박 알림 본문. 슬랙에서 글자를 키울 수 있는 블록은 header 뿐이라,
+    제목은 굵게 한 번만 쓰고 정작 급할 때 봐야 하는 하원 시간을 header 로 올린다."""
+    blocks = [
+        section_mrkdwn(
+            f"*🚨 하원 {lead_minutes}분 전*\n{kids_label()} 곧 도착해요. 지금 준비해 주세요!"
+        ),
+        header_block(f"{clock_emoji(schedule['endTime'])} {schedule['endTime']} 하원"),
+        section_mrkdwn("\n".join([academy_row(schedule)] + pickup_rows(schedule))),
+    ]
+
+    mentions = mention_text()
+    if mentions:
+        blocks.append(section_mrkdwn(mentions))
+
+    blocks.append(app_button_block())
+    fallback = f"하원 {lead_minutes}분 전 · {schedule['endTime']} · {schedule['academy']}"
+    return blocks, fallback
 
 
 def send_to_slack(webhook_url, blocks, fallback, color=None, icon=None, name=None):
