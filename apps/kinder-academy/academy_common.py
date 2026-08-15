@@ -23,7 +23,7 @@ SERVICE_ACCOUNT_JSON = os.path.join(HERE, "firebase-service-account.json")
 SAMPLE_DATA_JSON = os.path.join(HERE, "sample_schedules.json")
 
 FIRESTORE_COLLECTION = "schedules"
-KIDSPLANNER_URL = "https://kidsplanner-4c634.web.app/"
+ACADEMY_APP_URL = "https://kids-academy-planner.web.app/"
 PICKUP_LEAD_MINUTES = 30
 PICKUP_WINDOW_MINUTES = 10  # notify_imminent.py 의 cron 주기와 반드시 같아야 한다
 
@@ -42,21 +42,31 @@ def today_weekday_kr(dt):
 
 
 def load_slack_webhook():
-    """환경변수 또는 .env 에서 SLACK_WEBHOOK_URL 을 읽는다. kinder-schedule/notify.py 와 같은 방식."""
-    url = os.environ.get("SLACK_WEBHOOK_URL")
-    if url:
-        return url.strip().strip('"').strip("'")
+    """학원 알림용 웹훅을 읽는다.
+
+    슬랙에서 유치원(KidsPlanner)과 학원(KidsAcademy)을 다른 앱으로 분리했으므로
+    SLACK_WEBHOOK_URL_ACADEMY 를 먼저 본다. 없으면 유치원과 같은 웹훅으로 떨어진다.
+    """
+    for key in ("SLACK_WEBHOOK_URL_ACADEMY", "SLACK_WEBHOOK_URL"):
+        url = os.environ.get(key)
+        if url:
+            return url.strip().strip('"').strip("'")
 
     env_path = os.path.join(REPO, ".env")
     if os.path.exists(env_path):
+        found = {}
         with open(env_path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 key, _, value = line.partition("=")
-                if key.strip() == "SLACK_WEBHOOK_URL":
-                    return value.strip().strip('"').strip("'")
+                key = key.strip()
+                if key in ("SLACK_WEBHOOK_URL_ACADEMY", "SLACK_WEBHOOK_URL"):
+                    found[key] = value.strip().strip('"').strip("'")
+        for key in ("SLACK_WEBHOOK_URL_ACADEMY", "SLACK_WEBHOOK_URL"):
+            if found.get(key):
+                return found[key]
     return None
 
 
@@ -133,7 +143,7 @@ def context_block(text):
 
 
 def app_link_block():
-    return context_block(f"🔗 <{KIDSPLANNER_URL}|학원 스케줄 관리 앱 열기>")
+    return context_block(f"🔗 <{ACADEMY_APP_URL}|학원 스케줄 관리 앱 열기>")
 
 
 def academy_detail_line(schedule):

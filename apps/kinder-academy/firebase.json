@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "kids-academy-planner",
     "public": ".",
     "ignore": [
       "firebase.json",
