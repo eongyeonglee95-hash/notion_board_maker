@@ -30,7 +30,7 @@ PICKUP_WINDOW_MINUTES = 10  # notify_imminent.py 의 cron 주기와 반드시 �
 
 # 메시지 왼쪽 색 띠. 여러 알림이 쌓였을 때 색으로 종류를 구분한다.
 COLOR_DAILY = "#f2c744"    # 학원 아침 요약 — 노랑
-COLOR_IMMINENT = "#e01e5a"  # 하원 임박 — 빨강(지금 움직여야 하는 것)
+COLOR_IMMINENT = "#E5484D"  # 하원 임박 — 빨강(지금 움직여야 하는 것)
 
 # 메시지 아바타(이모지)와 표시 이름. 채널에 알림이 섞여 쌓이므로,
 # 색 띠보다 크게 보이는 아바타로 종류를 구분한다.
@@ -168,17 +168,68 @@ def app_link_block():
     return context_block(f"🔗 <{ACADEMY_APP_URL}|학원 스케줄 관리 앱 열기>")
 
 
+def app_button_block(text="학원 스케줄 확인하기"):
+    """링크 한 줄 대신 누를 수 있는 버튼. 모바일에서 손가락으로 짚기 쉽다."""
+    return {
+        "type": "actions",
+        "elements": [{
+            "type": "button",
+            "text": {"type": "plain_text", "text": text, "emoji": True},
+            "url": ACADEMY_APP_URL,
+        }],
+    }
+
+
+def kids_label():
+    """'제아·유빈이가' 같은 아이 이름 문구.
+
+    이 저장소는 공개라서 이름을 소스에 두지 않는다. GitHub Actions secret
+    ACADEMY_KIDS_LABEL 로 넣고, 없으면 이름 없는 문구로 떨어진다.
+    """
+    return os.environ.get("ACADEMY_KIDS_LABEL", "").strip() or "아이들이"
+
+
 # 빈 줄 한 칸. 슬랙은 section 텍스트 끝의 개행·공백을 잘라내서 "\n"만으로는
 # 빈 줄이 안 생긴다. 잘리지 않는 non-breaking space 한 글자를 넣어 자리를 만든다.
 BLANK_ROW = " "
 
 
+# 학원 종류별 아이콘. 없는 종류는 🎓 로 떨어진다.
+ACADEMY_ICONS = {
+    "발레": "🩰",
+    "무용": "🩰",
+    "피아노": "🎹",
+    "미술": "🎨",
+    "태권도": "🥋",
+    "수영": "🏊",
+    "축구": "⚽",
+    "영어": "🔤",
+    "수학": "🔢",
+    "독서": "📚",
+    "체육": "🤸",
+}
+
+_CLOCK_HOUR = ["🕛", "🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚"]
+_CLOCK_HALF = ["🕧", "🕜", "🕝", "🕞", "🕟", "🕠", "🕡", "🕢", "🕣", "🕤", "🕥", "🕦"]
+
+
+def clock_emoji(hhmm):
+    """'18:42' → 🕡 처럼 30분 단위로 내림한 시계 아이콘."""
+    try:
+        h, m = (int(x) for x in hhmm.split(":")[:2])
+    except (ValueError, AttributeError):
+        return "🕐"
+    faces = _CLOCK_HALF if m >= 30 else _CLOCK_HOUR
+    return faces[h % 12]
+
+
 def academy_row(schedule):
-    """'발레 : 라푸앙트' 형태의 학원 이름 줄. 종류가 없으면 이름만."""
+    """'🩰 라푸앙트 발레' 형태의 학원 줄. 종류가 없으면 이름만."""
     kind = schedule["academyType"]
+    icon = ACADEMY_ICONS.get(kind, "🎓")
     if kind and kind != "기타":
-        return f"🎓 *{kind} : {schedule['academy']}*"
-    return f"🎓 *{schedule['academy']}*"
+        return f"{icon} {schedule['academy']} {kind}"
+    return f"{icon} {schedule['academy']}"
 
 
 def pickup_rows(schedule):
@@ -188,10 +239,10 @@ def pickup_rows(schedule):
     (필요하면 앱 링크로 들어가서 본다).
     """
     rows = []
+    if schedule["dropoffPlace"]:
+        rows.append(f"📍 {schedule['dropoffPlace']}")
     if schedule["managerPhone"]:
         rows.append(f"📞 하원도우미 {schedule['managerPhone']}")
-    if schedule["dropoffPlace"]:
-        rows.append(f"📍 하차 {schedule['dropoffPlace']}")
     return rows
 
 
@@ -239,6 +290,8 @@ def print_blocks(blocks):
             print("---")
         elif t == "context":
             print("  " + " / ".join(e["text"] for e in b["elements"]))
+        elif t == "actions":
+            print("  " + " ".join(f"[{e['text']['text']}]" for e in b["elements"]))
 
 
 def send_or_print(webhook, blocks, fallback, dry_run, label,

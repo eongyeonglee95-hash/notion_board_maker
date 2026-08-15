@@ -30,30 +30,25 @@ def should_alert(now, pickup_dt):
 
 
 def build_blocks(imminent, day_label):
-    # 급한 알림이라 채널을 스크롤하다 눈에 걸리도록 아이콘을 일부러 많이 쓴다.
-    # 위아래 사이렌 띠로 감싸서 채널을 스크롤할 때 무조건 걸리게 한다.
-    siren_band = "🚨🚨🚨🚨🚨🚨🚨🚨🚨"
+    # 슬랙에서 글자 크기를 키울 수 있는 블록은 header 뿐이다. 제목은 굵게 한 번만 쓰고,
+    # 정작 급할 때 봐야 하는 하원 시간을 header 로 올려 가장 크게 보이게 한다.
     blocks = [
-        ac.section_mrkdwn(siren_band),
-        ac.header_block("🚨 하원 30분 전 🚨"),
-        ac.section_mrkdwn(siren_band),
-        ac.context_block("⏰⏰⏰  지금 준비하세요  🏃‍♀️💨🚗"),
+        ac.section_mrkdwn(
+            f"*🚨 하원 30분 전*\n{ac.kids_label()} 곧 도착해요. 지금 준비해 주세요!"
+        )
     ]
 
-    for i, s in enumerate(imminent):
-        lines = [f"⏰ *{s['endTime']} 하원* ⏰"]
-        lines.append(ac.academy_row(s))
+    for s in imminent:
+        blocks.append(ac.header_block(f"{ac.clock_emoji(s['endTime'])} {s['endTime']} 하원"))
+        lines = [ac.academy_row(s)]
         lines.extend(ac.pickup_rows(s))
-        lines.append(ac.BLANK_ROW)
         blocks.append(ac.section_mrkdwn("\n".join(lines)))
-        if i < len(imminent) - 1:
-            blocks.append(ac.divider_block())
 
     mentions = ac.mention_text()
     if mentions:
         blocks.append(ac.section_mrkdwn(mentions))
 
-    blocks.append(ac.app_link_block())
+    blocks.append(ac.app_button_block())
     names = ", ".join(s["academy"] for s in imminent)
     fallback = f"하원 30분 전 · {day_label} · {names}"
     return blocks, fallback
