@@ -2,7 +2,10 @@ name: 학원 하원 임박 알림
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # 매 10분 — notify_imminent.py 의 판정 윈도우 폭과 반드시 일치해야 함
+    # 5분마다 요청하지만 GitHub 은 실제로 20~50분 간격으로만 돌려준다(측정값).
+    # 그래서 판정 창을 35분으로 넓게 잡고, 중복은 Firestore 발송기록으로 막는다.
+    # 시간대는 UTC 0~13시 = KST 09~22시. 학원이 없는 새벽에는 돌리지 않는다.
+    - cron: '*/5 0-13 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

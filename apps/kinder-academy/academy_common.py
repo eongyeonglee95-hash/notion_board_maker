@@ -24,9 +24,16 @@ SERVICE_ACCOUNT_JSON = os.path.join(HERE, "firebase-service-account.json")
 SAMPLE_DATA_JSON = os.path.join(HERE, "sample_schedules.json")
 
 FIRESTORE_COLLECTION = "schedules"
+NOTIFY_STATE_COLLECTION = "notify_state"
 ACADEMY_APP_URL = "https://kids-academy-planner.web.app/"
-PICKUP_LEAD_MINUTES = 30
-PICKUP_WINDOW_MINUTES = 10  # notify_imminent.py 의 cron 주기와 반드시 같아야 한다
+
+# 하원까지 남은 시간이 이 값 이내면 알린다.
+#
+# 원래는 "30분 전 ±5분"인 10분짜리 창이었고, cron 주기(10분)와 폭을 맞춰
+# 상태 저장 없이 중복을 막았다. 그런데 실제로 재보니 GitHub Actions 는 */10 을
+# 19~52분(중앙값 29분) 간격으로밖에 안 돌려서, 10분 창은 거의 항상 건너뛴다.
+# 그래서 창을 넓히고 중복은 Firestore 발송기록(claim_notification)으로 막는다.
+PICKUP_ALERT_WINDOW_MINUTES = 35
 
 # 메시지 왼쪽 색 띠. 여러 알림이 쌓였을 때 색으로 종류를 구분한다.
 COLOR_DAILY = "#f2c744"    # 학원 아침 요약 — 노랑
@@ -107,8 +114,7 @@ def parse_schedule(doc_id, data):
     }
 
 
-def fetch_schedules():
-    """Firestore schedules 컬렉션 전체를 정규화해서 가져온다."""
+def firestore_client():
     import firebase_admin
     from firebase_admin import credentials, firestore
 
@@ -122,9 +128,37 @@ def fetch_schedules():
         cred = credentials.Certificate(SERVICE_ACCOUNT_JSON)
         firebase_admin.initialize_app(cred)
 
-    db = firestore.client()
-    docs = db.collection(FIRESTORE_COLLECTION).stream()
+    return firestore.client()
+
+
+def fetch_schedules():
+    """Firestore schedules 컬렉션 전체를 정규화해서 가져온다."""
+    docs = firestore_client().collection(FIRESTORE_COLLECTION).stream()
     return [parse_schedule(doc.id, doc.to_dict()) for doc in docs]
+
+
+def claim_notification(key):
+    """이 알림을 처음 보내는 것이면 True, 이미 보낸 적 있으면 False.
+
+    판정 창이 cron 주기보다 좁을 수 없게 되면서(윗쪽 PICKUP_ALERT_WINDOW_MINUTES
+    주석 참고) 연속된 실행이 같은 항목을 두 번 잡을 수 있다. 이미 쓰고 있는
+    Firestore 에 발송기록을 남겨 하루에 한 번만 나가게 한다.
+
+    create() 는 문서가 이미 있으면 실패하므로, 두 실행이 겹쳐도 한쪽만 이긴다.
+    """
+    from google.api_core import exceptions as gapi
+
+    doc = firestore_client().collection(NOTIFY_STATE_COLLECTION).document(key)
+    try:
+        doc.create({"sentAt": now_kst().isoformat()})
+        return True
+    except gapi.AlreadyExists:
+        return False
+
+
+def release_notification(key):
+    """발송기록을 지운다. 기록은 남겼는데 슬랙 발송이 실패했을 때 되돌리는 용도."""
+    firestore_client().collection(NOTIFY_STATE_COLLECTION).document(key).delete()
 
 
 def load_sample_schedules():
@@ -183,11 +217,6 @@ def kids_label():
     ACADEMY_KIDS_LABEL 로 넣고, 없으면 이름 없는 문구로 떨어진다.
     """
     return os.environ.get("ACADEMY_KIDS_LABEL", "").strip() or "아이들이"
-
-
-# 빈 줄 한 칸. 슬랙은 section 텍스트 끝의 개행·공백을 잘라내서 "\n"만으로는
-# 빈 줄이 안 생긴다. 잘리지 않는 non-breaking space 한 글자를 넣어 자리를 만든다.
-BLANK_ROW = " "
 
 
 # 학원 종류별 아이콘. 없는 종류는 🎓 로 떨어진다.

@@ -34,7 +34,6 @@ def build_blocks(schedules_today, day_label, weekday_kr):
             else "🕐 하원 미정"
         )
         lines.extend(ac.pickup_rows(s))
-        lines.append(ac.BLANK_ROW)
         blocks.append(ac.section_mrkdwn("\n".join(lines)))
         if i < len(schedules_today) - 1:
             blocks.append(ac.divider_block())
