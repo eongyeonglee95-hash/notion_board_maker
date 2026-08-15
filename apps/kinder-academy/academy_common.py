@@ -189,7 +189,7 @@ def pickup_rows(schedule):
     """
     rows = []
     if schedule["managerPhone"]:
-        rows.append(f"🧑‍✈️ 하원도우미 {schedule['managerPhone']}")
+        rows.append(f"📞 하원도우미 {schedule['managerPhone']}")
     if schedule["dropoffPlace"]:
         rows.append(f"📍 하차 {schedule['dropoffPlace']}")
     return rows
