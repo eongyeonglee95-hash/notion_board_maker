@@ -9,6 +9,10 @@ on:
         description: '연습 실행 (Slack 발송 안 함)'
         type: boolean
         default: false
+      now:
+        description: '테스트용 — 지금이 이 시각인 척한다 (YYYY-MM-DDTHH:MM, KST)'
+        type: string
+        default: ''
 
 jobs:
   notify:
@@ -36,4 +40,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL_ACADEMY: ${{ secrets.SLACK_WEBHOOK_URL_ACADEMY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: python3 notify_imminent.py ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          python3 notify_imminent.py \
+            ${{ inputs.dry_run && '--dry-run' || '' }} \
+            ${{ inputs.now && format('--now {0}', inputs.now) || '' }}
