@@ -24,6 +24,10 @@ NOTION_PY = os.path.join(
 )
 TARGETS_JSON = os.path.join(REPO, "notion_targets.json")
 
+# 깃허브 액션 러너는 UTC 로 돈다. 아침 잡은 21:30 UTC(=KST 다음날 06:30)에 실행되므로
+# date.today() 를 그대로 쓰면 하루 전 날짜를 "오늘"로 여긴다. 반드시 KST 로 계산한다.
+KST = datetime.timezone(datetime.timedelta(hours=9))
+
 # 관공서 공휴일(대체공휴일 포함). 근로자의날(5/1)은 관공서 공휴일이 아니라서 뺀다.
 # 매년 발표되는 달력을 보고 다음 해가 추가돼야 한다.
 KR_HOLIDAYS = {
@@ -113,7 +117,7 @@ def mark_holiday(mod, page_id):
 def main():
     mod = load_notion()
     targets = load_targets()
-    today = datetime.date.today()
+    today = datetime.datetime.now(KST).date()
 
     updated = 0
 

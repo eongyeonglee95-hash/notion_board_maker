@@ -43,6 +43,10 @@ CONFIG_JSON = os.path.join(HERE, "config.json")
 
 D_DAYS = (7, 3, 1)  # 휴가필요·제출물 알림은 이 날짜에만 발송한다
 
+# 깃허브 액션 러너는 UTC 로 돈다. 아침 잡은 21:30 UTC(=KST 다음날 06:30)에 실행되므로
+# date.today() 를 그대로 쓰면 하루 전 날짜로 알림이 나간다. 반드시 KST 로 계산한다.
+KST = datetime.timezone(datetime.timedelta(hours=9))
+
 COLOR_KINDER = "#3182f6"  # 메시지 왼쪽 색 띠 — 유치원은 파랑
 ICON_KINDER = ":school:"  # 아바타. 학원 알림과 한눈에 구분하려는 것
 NAME_KINDER = "유치원 알림"
@@ -495,7 +499,7 @@ def main():
 
     today = (
         datetime.date.fromisoformat(args.date) if args.date
-        else datetime.date.today()
+        else datetime.datetime.now(KST).date()
     )
 
     mod = load_notion()
